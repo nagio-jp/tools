@@ -14,7 +14,7 @@ claude/            Claude Code 用
 
 | skill | 内容 |
 |-------|------|
-| [discover-cases](claude/skills/discover-cases/SKILL.md) | Web アプリ・サイト（静的 HTML、React・Vue・Next.js などの SPA）の全画面について、参考資料の問診と画面の棚卸しをしてから E2E テストケースを洗い出し、抜けが 0 件になるまで埋める。成果物はローカルの JSON だけで、外部サービスには登録しない |
+| [discover-cases](claude/skills/discover-cases/SKILL.md) | Web アプリ・サイト（静的 HTML、React・Vue・Next.js などの SPA）について、機能 → 画面 → E2E テストケースの順に洗い出し、抜けが 0 件になるまで埋める。人がレビューするのは最後に出る summary.md。成果物はローカルのファイルだけで、外部サービスには登録しない |
 
 使いたい skill のディレクトリを、Claude Code の skill ディレクトリにコピーする（更新を追従したい場合はシンボリックリンクにする）。
 
@@ -36,7 +36,8 @@ Claude Code で `/discover-cases <対象のルートディレクトリ> [起動�
 | `inventory.mjs` | 静的 HTML から操作できる要素を抽出する | なし |
 | `routes.mjs` | ソースから画面のルートを拾う（Next.js・Nuxt・SvelteKit・React Router・Vue Router など） | なし |
 | `crawl.mjs` | 起動中のアプリをブラウザで巡回し、描画後の画面から操作できる要素を抽出する | Playwright |
-| `coverage.mjs` | 全要素がケースか除外で埋まったかを判定する | なし |
+| `features.mjs` | 機能一覧（features.json）を「グループ → 機能」の木で出し、どの機能にも属さない画面を示す | なし |
+| `coverage.mjs` | 全機能にケースがあるか・全画面と全要素がどれかの機能・ケースに属するかを判定し、summary.md を書き出す | なし |
 
 `crawl.mjs` を使うときだけ、Playwright を入れる（対象プロジェクトに Playwright があれば `--project <対象>` でそれを使える）。
 

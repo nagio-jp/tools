@@ -741,7 +741,7 @@ async function main() {
   const sec = ((Date.now() - started) / 1000).toFixed(1);
   console.log(`画面 ${visited.size}（+ 共通部品 ${layoutCount > 0 ? 1 : 0}、未到達 ${unreached.length}）/ 要素 ${total} / ${sec} 秒 -> ${outPath}`);
   if (layoutCount > 0) console.log(`共通部品: ${threshold} 画面以上に同じ形で現れる ${layoutCount} 要素を ${LAYOUT} にまとめた`);
-  if (carried.risk || carried.manual) console.log(`前回から引き継ぎ: risk ${carried.risk} 件 / 手動追記 ${carried.manual} 件`);
+  if (carried.manual) console.log(`前回から引き継ぎ: 手動追記 ${carried.manual} 件`);
   if (capped) console.log(`画面数の上限（--max-pages ${maxPages}）で打ち切った。未訪問の URL が残っている`);
   console.log("");
   printTable(pages);

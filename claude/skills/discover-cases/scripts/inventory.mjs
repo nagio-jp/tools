@@ -2,7 +2,7 @@
 // 使い方: node inventory.mjs <HTML のルートディレクトリ> [出力ディレクトリ=<ルート>/testcases]
 // 静的 HTML からテスト対象の要素を機械的に抜き出し、<出力>/inventory.json に書く。
 // 複数画面に同じ形で現れる要素（ナビ・ヘッダーなど）は、擬似画面 "_layout" に 1 回だけ載せる。
-// 再実行しても、人が付けた risk と手動追記（source: "manual"）の要素は引き継ぐ。
+// 再実行しても、手動追記（source: "manual"）の要素は引き継ぐ。
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { LAYOUT, short, decodeEntities, classHint, buildPages, carryOver, writeInventory, printTable, printVariations, printLibraries } from "./lib/core.mjs";
@@ -209,7 +209,7 @@ writeInventory(outPath, { mode: "static", root, pages });
 const total = pages.reduce((n, p) => n + p.elements.length, 0);
 console.log(`HTML ファイル ${files.length} / 画面 ${raw.length}（+ 共通部品 ${layoutCount > 0 ? 1 : 0}）/ 要素 ${total} -> ${outPath}`);
 if (layoutCount > 0) console.log(`共通部品: ${threshold} 画面以上に同じ形で現れる ${layoutCount} 要素を ${LAYOUT} にまとめた`);
-if (carried.risk || carried.manual) console.log(`前回から引き継ぎ: risk ${carried.risk} 件 / 手動追記 ${carried.manual} 件`);
+if (carried.manual) console.log(`前回から引き継ぎ: 手動追記 ${carried.manual} 件`);
 console.log("");
 printTable(pages);
 printVariations(pages);

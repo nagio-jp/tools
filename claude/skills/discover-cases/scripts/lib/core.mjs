@@ -55,7 +55,7 @@ function assignIds(file, elements) {
     let id = base;
     for (let n = 2; used.has(id); n++) id = `${base}-${n}`;
     used.add(id);
-    return { id, ...rest, risk: "normal" };
+    return { id, ...rest };
   });
 }
 
@@ -119,25 +119,17 @@ export function buildPages(raw) {
   return { pages, layoutCount: layoutSigs.size, threshold };
 }
 
-// 前回の inventory.json から、人が付けた risk と手動追記（source: "manual"）の要素を引き継ぐ
+// 前回の inventory.json から、手動追記（source: "manual"）とブラウザで確かめて足した要素（source: "browser"）を引き継ぐ
 export function carryOver(pages, outPath) {
-  const carried = { risk: 0, manual: 0 };
+  const carried = { manual: 0 };
   if (!existsSync(outPath)) return carried;
   const prev = JSON.parse(readFileSync(outPath, "utf8"));
-  const prevById = new Map((prev.pages ?? []).flatMap((p) => (p.elements ?? []).map((e) => [e.id, e])));
-  for (const page of pages) {
-    for (const el of page.elements) {
-      const before = prevById.get(el.id);
-      if (before?.risk && before.risk !== el.risk) {
-        el.risk = before.risk;
-        carried.risk++;
-      }
-    }
-  }
   for (const prevPage of prev.pages ?? []) {
-    const manual = (prevPage.elements ?? []).filter((e) => e.source === "manual");
+    // 旧版の擬似画面 _flows は引き継がない（画面をまたぐ流れは機能として features.json に持つ）
+    if (prevPage.file === FLOWS) continue;
+    const manual = (prevPage.elements ?? []).filter((e) => e.source === "manual" || e.source === "browser");
     let page = pages.find((p) => p.file === prevPage.file);
-    if (!page && (manual.length > 0 || prevPage.file === FLOWS)) {
+    if (!page && manual.length > 0) {
       const { elements: _e, ...rest } = prevPage;
       page = { ...rest, elements: [] };
       pages.push(page);
@@ -167,7 +159,7 @@ export function printTable(pages) {
   }
 }
 
-// 共通部品のうち、一部の画面だけ文脈が違うもの。押したときの挙動が画面によって変わる不具合の手がかりになる
+// 共通部品のうち、一部の画面だけ文脈が違うもの。その画面を担当する機能のケースで、違いも確かめる材料にする
 export function printVariations(pages) {
   const layout = pages.find((p) => p.file === LAYOUT);
   const risky = [];
@@ -184,7 +176,7 @@ export function printVariations(pages) {
     }
   }
   if (risky.length > 0) {
-    console.log("\n要注意: 共通部品なのに、一部の画面だけ form の中にある・押したときの動作が違う要素（不具合の候補。ケースで確かめる）:");
+    console.log("\n画面ごとの違い: 共通部品のうち、一部の画面だけ form の中にある・押したときの動作が違う要素（その画面の機能のケースで確かめる）:");
     for (const t of risky) console.log(`  - ${t}`);
   }
   if (stateOnly.size > 0) {

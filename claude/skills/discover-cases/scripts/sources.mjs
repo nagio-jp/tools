@@ -77,7 +77,7 @@ const asFound = (paths, reason) => paths.map((p) => ({ path: rel(p), reason }));
   const html = byName(/\.html?$/i);
   if (html.length) found.push({ path: rel(dirname(html[0])), reason: `HTML ${html.length} ファイル（例: ${rel(html[0])}）` });
   found.push(...asFound(byName(/^(vite|webpack|next|nuxt|svelte|astro|angular)\.config\.(js|ts|mjs|cjs)$|^angular\.json$/), "ビルド設定"));
-  category("frontend", "フロントエンド（フレームワーク・起動方法）", "工程 1 の棚卸しの方式（静的 HTML か、起動して巡回か）を決める", found);
+  category("frontend", "フロントエンド（フレームワーク・起動方法）", "工程 2 の棚卸しの方式（静的 HTML か、起動して巡回か）を決める", found);
 }
 
 // ---- バックエンド ----
@@ -102,11 +102,11 @@ const asFound = (paths, reason) => paths.map((p) => ({ path: rel(p), reason }));
   for (const [a, f] of actions) found.push({ path: f, reason: `form の送信先: ${a}` });
   const hints = [];
   if (formsWithoutAction > 0) hints.push(`HTML の form ${formsWithoutAction} 個に送信先（action）が無い。JS で送信していなければ、送信処理は無い`);
-  category("backend", "バックエンド（送信処理・データ保存）", "送信失敗・二重送信・保存後の表示のケースを書くかを決める", found, hints);
+  category("backend", "バックエンド（送信処理・データ保存）", "保存・送信の結果（保存後の表示・失敗時の表示）のケースを書くかを決める", found, hints);
 }
 
 // ---- API 定義 ----
-category("api", "API 定義", "入力の制約・エラー応答のケースの根拠にする", [
+category("api", "API 定義", "機能（データごとの作成・一覧・更新・削除）の洗い出しと、入力チェック・境界値の根拠にする", [
   ...asFound(byName(/^(openapi|swagger)[\w.-]*\.(ya?ml|json)$/i), "OpenAPI / Swagger"),
   ...asFound(byName(/\.proto$/), "Protocol Buffers"),
   ...asFound(byName(/\.(graphql|gql)$/), "GraphQL スキーマ"),
@@ -115,7 +115,7 @@ category("api", "API 定義", "入力の制約・エラー応答のケースの�
 ]);
 
 // ---- DB ----
-category("db", "DB（スキーマ・マイグレーション・初期データ）", "必須・文字数・一意性の制約と、作成→一覧→更新→削除のフローの根拠にする", [
+category("db", "DB（スキーマ・マイグレーション・初期データ）", "データごとの機能の洗い出しと、必須・文字数・一意性の制約の根拠にする", [
   ...asFound(dirsNamed(/^(migrations?|migrate)$/), "マイグレーション"),
   ...asFound(byName(/^schema\.(sql|rb|prisma)$|\.prisma$/), "スキーマ定義"),
   ...asFound(byName(/\.entity\.(ts|js)$/), "TypeORM エンティティ"),
@@ -136,7 +136,7 @@ category("db", "DB（スキーマ・マイグレーション・初期データ�
     const m = read(f, 50_000).match(mdKeywords);
     if (m) found.push({ path: rel(f), reason: `文中に「${m[0]}」` });
   }
-  category("spec", "仕様・要件", "期待値の根拠にする。無いと needsReview（あるべき挙動の推測）が増える", found);
+  category("spec", "仕様・要件", "機能一覧と期待値の根拠にする。無いと期待値は画面の現状の挙動に頼る", found);
 }
 
 // ---- 既存のテスト ----
@@ -159,7 +159,7 @@ category("db", "DB（スキーマ・マイグレーション・初期データ�
   }
   found.push(...anyDep(/^(next-auth|@auth\/core|@auth0\/.+|firebase|@firebase\/auth|@clerk\/.+|passport.*|@supabase\/auth-helpers.*|aws-amplify|@aws-amplify\/auth|lucia|better-auth)$/));
   found.push(...asFound(byPath(/(^|\/)(auth|login|signin|sign-in|session)[^/]*\.(js|ts|tsx|jsx|vue|html|py|go|rb|php)$/i).slice(0, 20), "ログイン・認証らしきファイル"));
-  category("auth", "認証（ログイン方式・テスト用アカウント）", "ログインが要る画面を巡回できるようにする。認証エラーのケースを書くかを決める", found);
+  category("auth", "認証（ログイン方式・テスト用アカウント）", "ログインが要る画面を巡回できるようにする。ログイン・権限の機能の根拠にする", found);
 }
 
 // ---- デザイン ----
@@ -199,6 +199,8 @@ writeFileSync(
 );
 
 console.log(`参考資料の候補（${files.length} ファイルを走査）-> ${outPath}\n`);
+// 問診で「違う番号」を答えてもらえるよう、通し番号を振る
+let no = 0;
 for (const c of categories) {
   if (c.found.length === 0) {
     console.log(`■ ${c.label}: 見つからなかった`);
@@ -206,7 +208,13 @@ for (const c of categories) {
     continue;
   }
   console.log(`■ ${c.label}: ${c.found.length} 件`);
-  for (const x of c.found.slice(0, 8)) console.log(`  - ${x.path}  （${x.reason}）${x.source === "manual" ? " [人が追加]" : ""}`);
-  if (c.found.length > 8) console.log(`  - 他 ${c.found.length - 8} 件（sources.json を参照）`);
+  for (const x of c.found.slice(0, 8)) console.log(`  ${++no}. ${x.path}  （${x.reason}）${x.source === "manual" ? " [人が追加]" : ""}`);
+  if (c.found.length > 8) console.log(`  （他 ${c.found.length - 8} 件は sources.json を参照）`);
 }
+console.log(`
+問診（選択式で 1 回にまとめて聞く）:
+  1. 見つかった資料はこれで合っていますか（はい / 違う番号を教える）
+  2. ほかに参考にできる資料はありますか（なし / パスか URL を貼る）
+  3. 入力した内容を保存・送信するサーバーはありますか（ある / ない / 分からない）
+  4. ログインは必要ですか（不要 / 必要 / 分からない）`);
 if (files.length >= MAX_FILES) console.log(`\n走査の上限（${MAX_FILES} ファイル）で打ち切った。対象ディレクトリを絞って実行し直すとよい`);
