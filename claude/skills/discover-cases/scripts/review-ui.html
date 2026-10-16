@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>テストケースのレビュー</title>
+<style>
+:root {
+  --bg: #f5f6f8; --panel: #ffffff; --panel-2: #f1f3f6; --text: #1d2330; --muted: #667085; --faint: #c4cad4; --border: #dde1e7;
+  --accent: #2f6fde; --accent-weak: #e8effc; --ok: #1f8a4c; --ok-weak: #e3f4ea; --warn: #c26a0a; --warn-weak: #fbefe0;
+  --bad: #c0392b; --bad-weak: #fbe7e5; --info: #6d4fc2; --info-weak: #efeafb; --gray-weak: #eceef2; --hl: #ffe58a;
+  --radius: 8px; --shadow: 0 1px 2px rgba(16, 24, 40, .06);
+  --c0: #2f6fde; --c1: #1f8a4c; --c2: #c26a0a; --c3: #8e44ad; --c4: #c0392b; --c5: #138d90; --c6: #b7950b; --c7: #5d6d7e;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c; --panel: #1b1f26; --panel-2: #222731; --text: #e4e7ec; --muted: #98a2b3; --faint: #4a5263; --border: #303644;
+    --accent: #6c9ef2; --accent-weak: #22304a; --ok: #4cc27e; --ok-weak: #1d3326; --warn: #e3a45a; --warn-weak: #3a2c1a;
+    --bad: #ef7b6e; --bad-weak: #3d2220; --info: #a990f0; --info-weak: #2c2545; --gray-weak: #2a2f3a; --hl: #6b5a12; --shadow: none;
+    --c0: #6c9ef2; --c1: #4cc27e; --c2: #e3a45a; --c3: #c39bd3; --c4: #ef7b6e; --c5: #48c9b0; --c6: #f4d03f; --c7: #aab7b8;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); text-decoration: none; cursor: pointer; }
+a:hover { text-decoration: underline; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.app { display: flex; flex-direction: column; height: 100vh; }
+header.top { display: flex; align-items: center; gap: 14px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+header.top h1 { font-size: 15px; margin: 0; white-space: nowrap; }
+header.top .target { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.progress { flex: 1; min-width: 160px; max-width: 520px; }
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--gray-weak); }
+.bar span { display: block; height: 100%; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 3px; color: var(--muted); font-size: 12px; }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
+.spacer { flex: 1; }
+.btn { border: 1px solid var(--border); background: var(--panel); border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--panel-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.small { padding: 1px 8px; font-size: 12px; }
+.btn.on { background: var(--accent-weak); border-color: var(--accent); color: var(--accent); }
+nav.tabs { display: flex; gap: 2px; padding: 0 16px; background: var(--panel); border-bottom: 1px solid var(--border); align-items: center; }
+nav.tabs button { border: 0; background: none; padding: 8px 12px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
+nav.tabs button.on { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+nav.tabs .sep { width: 1px; height: 18px; background: var(--border); margin: 0 6px; }
+.badge { display: inline-block; padding: 0 6px; border-radius: 10px; font-size: 11px; line-height: 18px; background: var(--gray-weak); color: var(--muted); white-space: nowrap; }
+.badge.ok { background: var(--ok-weak); color: var(--ok); }
+.badge.warn { background: var(--warn-weak); color: var(--warn); }
+.badge.bad { background: var(--bad-weak); color: var(--bad); }
+.badge.info { background: var(--info-weak); color: var(--info); }
+.badge.acc { background: var(--accent-weak); color: var(--accent); }
+.prio-high { background: var(--bad-weak); color: var(--bad); }
+.prio-normal { background: var(--gray-weak); color: var(--muted); }
+.prio-low { background: transparent; color: var(--muted); border: 1px solid var(--border); line-height: 16px; }
+.chip { display: inline-block; padding: 0 6px; margin: 1px 3px 1px 0; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; line-height: 18px; background: var(--panel); color: var(--muted); white-space: nowrap; }
+.chip.cat { border-color: transparent; background: var(--accent-weak); color: var(--accent); }
+.chip.free { border-style: dashed; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.banner { padding: 6px 16px; background: var(--info-weak); border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; }
+.banner.err { background: var(--bad-weak); }
+.toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 6px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.toolbar input[type=search] { width: 170px; }
+.toolbar select { max-width: 150px; }
+.toolbar input, .toolbar select { padding: 3px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
+.toolbar label { display: inline-flex; gap: 4px; align-items: center; color: var(--muted); }
+.toolbar .grp { display: inline-flex; gap: 4px; align-items: center; padding-left: 8px; margin-left: 2px; border-left: 1px solid var(--border); }
+main { flex: 1; display: flex; min-height: 0; }
+.center { flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; }
+.panel { width: 440px; flex: none; border-left: 1px solid var(--border); background: var(--bg); overflow: auto; }
+.panel .inner { padding: 14px; }
+.panel .close { float: right; }
+.scroll { overflow: auto; flex: 1; min-height: 0; }
+.page { padding: 16px; max-width: 1280px; margin: 0 auto; }
+/* SVG */
+svg.viz { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; }
+svg.viz.dragging { cursor: grabbing; }
+svg.viz text { font-size: 12px; fill: var(--text); dominant-baseline: middle; pointer-events: none; }
+svg.viz .node title { pointer-events: none; }
+svg.viz .node { cursor: pointer; }
+svg.viz .node .sub { fill: var(--muted); font-size: 11px; }
+svg.viz .node .prio { font-weight: 700; fill: var(--bad); }
+svg.viz .node:hover text.label { text-decoration: underline; }
+svg.viz .node.sel rect.bg { fill: var(--accent-weak); stroke: var(--accent); }
+svg.viz .node.hit rect.bg { fill: var(--hl); }
+svg.viz .node.dim { opacity: .28; }
+svg.viz rect.bg { fill: transparent; stroke: none; rx: 4; pointer-events: all; }
+svg.viz .node:hover rect.bg { fill: var(--panel-2); }
+svg.viz path.edge { fill: none; stroke: var(--faint); stroke-width: 1.2; }
+svg.viz path.edge.dim { opacity: .2; }
+svg.viz path.rel { fill: none; stroke: var(--faint); opacity: .7; }
+svg.viz path.rel.on { stroke: var(--accent); opacity: 1; }
+svg.viz path.rel.off { opacity: .08; }
+svg.viz text.head { fill: var(--muted); font-size: 11px; font-weight: 700; }
+.vizbar { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; }
+.vizlegend { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 11px; color: var(--muted); max-width: 70%; }
+.vizlegend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 10px; vertical-align: -1px; }
+.vizlegend i:first-child { margin-left: 0; }
+/* 表 */
+table.grid { border-collapse: collapse; width: 100%; }
+table.grid th, table.grid td { border-bottom: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: top; }
+table.grid th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel); z-index: 2; white-space: nowrap; }
+table.grid th.sort { cursor: pointer; }
+table.grid td.n, table.grid th.n { text-align: right; font-variant-numeric: tabular-nums; }
+table.grid tr.click { cursor: pointer; }
+table.grid tr.click:hover td { background: var(--panel-2); }
+table.cases td { background: var(--panel); }
+table.cases tr.row.sel td { background: var(--accent-weak); }
+table.cases tr.ghead td { background: var(--panel-2); font-weight: 700; cursor: pointer; position: sticky; top: 29px; z-index: 1; }
+table.cases tr.fhead td { background: var(--bg); font-weight: 600; cursor: pointer; }
+table.cases td.wrap { min-width: 220px; max-width: 360px; }
+table.cases td ol { margin: 0; padding-left: 16px; }
+table.cases .st { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+table.cases .acts { white-space: nowrap; }
+table.cases .acts button { border: 1px solid var(--border); background: var(--panel); border-radius: 4px; font-size: 11px; padding: 0 5px; cursor: pointer; }
+table.cases .acts button:hover { background: var(--panel-2); }
+table.heat td.h { text-align: center; font-variant-numeric: tabular-nums; min-width: 44px; }
+table.heat td.zero { color: var(--faint); }
+table.heat td.group { color: var(--muted); font-size: 12px; white-space: nowrap; }
+details.cols { position: relative; }
+details.cols > div { position: absolute; z-index: 5; top: 26px; left: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; box-shadow: 0 6px 24px rgba(0,0,0,.12); display: grid; gap: 2px; min-width: 160px; }
+details.cols summary { list-style: none; cursor: pointer; }
+/* 詳細パネル・カード */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; box-shadow: var(--shadow); }
+.card .k { color: var(--muted); font-size: 12px; } .card .v { font-size: 20px; font-weight: 600; } .card .s { color: var(--muted); font-size: 12px; }
+section.box { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
+section.box > h2 { font-size: 13px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+section.box > h2 .sub { color: var(--muted); font-weight: normal; font-size: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: var(--panel); padding: 2px 10px; cursor: pointer; font-size: 12px; }
+.seg button.on { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+.dhead .path { color: var(--muted); font-size: 12px; }
+.dhead h2 { margin: 2px 0 6px; font-size: 16px; }
+.kv { display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; margin: 6px 0 10px; }
+.kv > .k { color: var(--muted); font-size: 12px; padding-top: 1px; }
+.kv ol { margin: 0; padding-left: 18px; }
+.q { background: var(--warn-weak); border-radius: 6px; padding: 4px 8px; }
+.clist .ci { display: flex; gap: 6px; align-items: baseline; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+.clist .ci:hover { background: var(--panel-2); }
+.clist .ci .t { flex: 1; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.composer .types { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.composer .types kbd { font-size: 10px; margin-left: 3px; }
+.composer .form { margin-top: 8px; display: grid; gap: 8px; }
+.composer textarea { width: 100%; min-height: 54px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); resize: vertical; }
+.composer .pp { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; background: var(--panel); max-height: 240px; overflow: auto; }
+.composer .pp .cat { font-size: 11px; color: var(--muted); margin: 4px 0 1px; font-weight: 600; }
+.composer .pp label { display: inline-flex; gap: 4px; align-items: center; margin: 0 10px 2px 0; cursor: pointer; }
+.composer .custom { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.composer .custom input { flex: 1; min-width: 160px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
+.composer .err { color: var(--bad); font-size: 12px; }
+.thread { margin-top: 8px; display: grid; gap: 6px; }
+.fb { border: 1px solid var(--border); border-radius: 6px; background: var(--panel); padding: 6px 8px; }
+.fb .fh { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.fb .fh .when { color: var(--muted); font-size: 11px; margin-left: auto; }
+.fb .body { margin-top: 3px; white-space: pre-wrap; }
+.fb .reply { margin: 6px 0 0 12px; padding: 4px 8px; border-left: 3px solid var(--border); }
+.fb .reply.agent { border-left-color: var(--info); background: var(--info-weak); border-radius: 0 6px 6px 0; }
+.fb .reply .who { font-size: 11px; color: var(--muted); }
+.fb .acts { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.fb .acts textarea { flex: 1 1 100%; min-height: 40px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); }
+.empty { color: var(--muted); padding: 12px 0; }
+kbd { font-family: ui-monospace, monospace; font-size: 11px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--panel-2); color: var(--muted); }
+.kbd-help { position: fixed; right: 460px; bottom: 16px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.15); font-size: 12px; z-index: 10; }
+.kbd-help td { padding: 1px 8px 1px 0; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 6px 14px; border-radius: 6px; font-size: 12px; z-index: 20; }
+.el-list { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+@media (max-width: 1100px) { .panel { width: 360px; } }
+</style>
+</head>
+<body>
+<div class="app" id="app"><div class="page muted">読み込み中…</div></div>
+<script>
+"use strict";
+// ---------- 定数 ----------
+const STATE_LABEL = { pending: "未確認", ok: "OK", open: "対応待ち", answered: "確認待ち", changed: "再確認" };
+const STATE_CLASS = { pending: "", ok: "ok", open: "warn", answered: "info", changed: "acc" };
+const STATE_COLOR = { ok: "var(--ok)", answered: "var(--info)", open: "var(--warn)", changed: "var(--accent)", pending: "var(--faint)" };
+const FB_STATUS = { open: "対応待ち", done: "対応済み", wontfix: "対応しない", closed: "閉じた" };
+const FB_STATUS_CLASS = { open: "warn", done: "info", wontfix: "bad", closed: "" };
+const TYPE_CLASS = { ok: "ok", fix: "warn", drop: "", comment: "", answer: "info" };
+const PRIORITY_LABEL = { high: "高", normal: "中", low: "低" };
+const VIEWS = { map: "マップ", rel: "関係図", table: "表" };
+const PAGES = { overview: "概要", questions: "確認事項", feedback: "フィードバック" };
+const COLUMNS = [
+  ["id", "ID", false], ["group", "グループ", false], ["feature", "機能", false], ["priority", "優先度", false], ["screens", "画面", true],
+  ["perspective", "観点", true], ["catalog", "カタログ観点", true], ["title", "タイトル", true], ["preconditions", "前提", false],
+  ["steps", "手順", false], ["expected", "期待値", true], ["question", "確認事項", false], ["fb", "FB", true],
+];
+
+const S = {
+  data: null, view: "map", sel: { kind: "all", id: null },
+  filters: { q: "", priority: "", perspective: "", catalog: "", state: "", question: false },
+  map: { by: "screen", color: "review", open: null, t: null }, rel: { t: null, hover: null },
+  table: { sort: null, dir: 1, grouped: true, cols: new Set(COLUMNS.filter((c) => c[2]).map((c) => c[0])), collapsed: new Set() },
+  matrix: "perspective", fbFilter: null, composer: null, reopen: null, help: false, panel: true,
+  version: null, reviewVersion: null, stale: false, staleReview: false,
+};
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const fmtTime = (iso) => { if (!iso) return ""; const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+const screenName = (s) => (s === "_layout" ? "共通部品" : s);
+
+// ---------- 索引 ----------
+let IX = {};
+function index() {
+  const d = S.data;
+  const catByKey = new Map(d.catalog.map((c) => [c.key, c]));
+  const catColor = new Map(d.catalogCategories.map((c, i) => [c, `var(--c${i % 8})`]));
+  const featById = new Map(d.features.map((f) => [f.id, f]));
+  const casesByFeature = new Map(d.features.map((f) => [f.id, []]));
+  for (const c of d.cases) { if (!casesByFeature.has(c.feature)) casesByFeature.set(c.feature, []); casesByFeature.get(c.feature).push(c); }
+  const caseById = new Map(d.cases.map((c) => [c.id, c]));
+  const groups = new Map();
+  for (const f of d.features) { if (!groups.has(f.group)) groups.set(f.group, []); groups.get(f.group).push(f); }
+  const fbByTarget = new Map();
+  for (const f of d.review.feedback) { const k = `${f.target.kind}:${f.target.id ?? ""}`; if (!fbByTarget.has(k)) fbByTarget.set(k, []); fbByTarget.get(k).push(f); }
+  const screenById = new Map(d.screens.map((s) => [s.id, s]));
+  const known = d.review.known ?? {};
+  IX = { catByKey, catColor, featById, casesByFeature, caseById, groups, fbByTarget, screenById, known, hasRound: Object.keys(known).length > 0 };
+}
+const fbFor = (kind, id) => IX.fbByTarget.get(`${kind}:${id ?? ""}`) ?? [];
+function caseState(c) {
+  const fbs = fbFor("case", c.id);
+  if (fbs.some((f) => f.status === "open")) return "open";
+  if (fbs.some((f) => f.status === "done" || f.status === "wontfix")) return "answered";
+  const oks = fbs.filter((f) => f.type === "ok");
+  if (!oks.length) return "pending";
+  const last = oks[oks.length - 1];
+  return last.caseHash && last.caseHash !== c.hash ? "changed" : "ok";
+}
+function caseFlag(c) {
+  if (!IX.hasRound) return null;
+  if (!(c.id in IX.known)) return "new";
+  return IX.known[c.id] !== c.hash ? "updated" : null;
+}
+function stateCounts(list) { const m = { ok: 0, answered: 0, open: 0, changed: 0, pending: 0 }; for (const c of list) m[caseState(c)]++; return m; }
+function fbCounts(kind, id) { const l = fbFor(kind, id).filter((f) => f.type !== "ok"); return { open: l.filter((f) => f.status === "open").length, wait: l.filter((f) => f.status === "done" || f.status === "wontfix").length, all: l.length }; }
+function primaryCategory(c) { const k = (c.catalogPerspectives ?? [])[0]; return k ? IX.catByKey.get(k)?.category : null; }
+// 機能の観点の厚さ。優先度が高いほど多くの観点を求める
+function thinness(f, cs) {
+  const kinds = new Set(cs.map((c) => c.perspective)).size;
+  const need = { high: 4, normal: 3, low: 1 }[f.priority] ?? 3;
+  if (cs.length < 2 && f.priority !== "low") return "thin";
+  if (kinds >= need) return "rich";
+  return kinds >= Math.max(1, need - 1) ? "mid" : "thin";
+}
+const THIN_COLOR = { thin: "var(--bad)", mid: "var(--warn)", rich: "var(--ok)" };
+const THIN_LABEL = { thin: "観点が薄い", mid: "やや薄い", rich: "十分" };
+
+// ---------- 絞り込み（3 つの表示で共通） ----------
+function filtersActive() { const f = S.filters; return Boolean(f.priority || f.perspective || f.catalog || f.state || f.question); }
+function textMatch(c) {
+  const q = S.filters.q.trim().toLowerCase();
+  if (!q) return true;
+  const feat = IX.featById.get(c.feature);
+  return [c.id, c.title, c.expected, c.preconditions, ...(c.steps ?? []), c.perspectiveNote, feat?.name, feat?.group, ...(c.screens ?? [])].join(" ").toLowerCase().includes(q);
+}
+function caseMatches(c, withText = true) {
+  const f = S.filters;
+  const feat = IX.featById.get(c.feature);
+  if (f.priority && feat?.priority !== f.priority) return false;
+  if (f.perspective && c.perspective !== f.perspective) return false;
+  if (f.catalog) {
+    const keys = c.catalogPerspectives ?? [];
+    if (f.catalog.startsWith("cat:")) { const cat = f.catalog.slice(4); if (!keys.some((k) => IX.catByKey.get(k)?.category === cat)) return false; }
+    else if (f.catalog === "none") { if (keys.length) return false; }
+    else if (!keys.includes(f.catalog)) return false;
+  }
+  if (f.state) { if (f.state === "changes") { if (!caseFlag(c)) return false; } else if (caseState(c) !== f.state) return false; }
+  if (f.question && !c.question) return false;
+  return withText ? textMatch(c) : true;
+}
+function featureVisible(feat) {
+  if (S.filters.priority && feat.priority !== S.filters.priority) return false;
+  if (!filtersActive()) return true;
+  return (IX.casesByFeature.get(feat.id) ?? []).some((c) => caseMatches(c, false));
+}
+// j/k の移動順。表の並びと同じにする
+function orderedCases() {
+  const out = [];
+  for (const feats of IX.groups.values()) for (const f of feats) for (const c of sortCases(IX.casesByFeature.get(f.id) ?? [])) if (caseMatches(c)) out.push(c);
+  return S.view === "table" && !S.table.grouped ? sortCases(out) : out;
+}
+
+// ---------- 通信 ----------
+async function load(keep) {
+  S.data = await (await fetch("/api/data")).json();
+  S.version = S.data.version; S.reviewVersion = S.data.reviewVersion; S.stale = false; S.staleReview = false;
+  index();
+  if (!keep) S.map.open = null;
+  if (S.sel.kind === "case" && !IX.caseById.has(S.sel.id)) S.sel = { kind: "all", id: null };
+  if (S.sel.kind === "feature" && !IX.featById.has(S.sel.id)) S.sel = { kind: "all", id: null };
+  render();
+}
+async function post(path, body) {
+  const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const out = await res.json();
+  if (!out.ok) { toast(out.error || "保存できませんでした"); return false; }
+  S.data.review = out.review; S.reviewVersion = out.reviewVersion; index();
+  return true;
+}
+async function poll() {
+  try {
+    const v = await (await fetch("/api/version")).json();
+    const stale = v.data !== S.version, staleReview = v.review !== S.reviewVersion;
+    if (stale !== S.stale || staleReview !== S.staleReview) { S.stale = stale; S.staleReview = staleReview; renderBanner(); }
+  } catch { /* サーバーが止まっていても画面は使えるようにする */ }
+}
+let toastTimer;
+function toast(msg) {
+  let el = document.querySelector(".toast");
+  if (!el) { el = document.createElement("div"); el.className = "toast"; document.body.append(el); }
+  el.textContent = msg; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.remove(), 2400);
+}
+
+// ---------- 描画: 枠 ----------
+function render() {
+  const d = S.data;
+  const keep = [...document.querySelectorAll("[data-keep-scroll]")].map((el) => [el.dataset.keepScroll, el.scrollTop]);
+  const counts = stateCounts(d.cases);
+  const total = d.cases.length || 1;
+  const fbAll = d.review.feedback.filter((f) => f.type !== "ok");
+  const fbOpen = fbAll.filter((f) => f.status === "open").length, fbWait = fbAll.filter((f) => f.status === "done" || f.status === "wontfix").length;
+  const qOpen = d.cases.filter((c) => c.question).length;
+  const isViz = S.view in VIEWS;
+  document.getElementById("app").innerHTML = `
+    <header class="top">
+      <h1>テストケースのレビュー</h1><span class="target" title="${esc(d.root)}">${esc(d.target)}</span>
+      <div class="progress"><div class="bar">${["ok", "answered", "open", "changed", "pending"].map((k) => `<span style="width:${(counts[k] / total) * 100}%;background:${STATE_COLOR[k]}"></span>`).join("")}</div>
+        <div class="legend">${["ok", "answered", "open", "changed", "pending"].map((k) => `<span><i style="background:${STATE_COLOR[k]}"></i>${STATE_LABEL[k]} ${counts[k]}</span>`).join("")}</div></div>
+      <span class="spacer"></span>
+      <button class="btn" data-act="help" title="キーボード操作">?</button>
+      <button class="btn primary" data-act="submit" title="この時点の内容を控え、Claude に対応を頼む">レビューを送る</button>
+    </header>
+    <div id="banner"></div>
+    <nav class="tabs">
+      ${Object.entries(VIEWS).map(([k, l]) => `<button class="${S.view === k ? "on" : ""}" data-act="view" data-v="${k}">${l}</button>`).join("")}
+      <span class="sep"></span>
+      ${Object.entries(PAGES).map(([k, l]) => { const n = k === "questions" ? qOpen : k === "feedback" ? (fbOpen + fbWait ? `${fbOpen} / ${fbWait}` : "") : ""; return `<button class="${S.view === k ? "on" : ""}" data-act="view" data-v="${k}">${l}${n ? ` <span class="badge">${n}</span>` : ""}</button>`; }).join("")}
+    </nav>
+    ${isViz ? renderToolbar() : ""}
+    <main>
+      <div class="center">${isViz ? { map: renderMap, rel: renderRel, table: renderTable }[S.view]() : `<div class="scroll" data-keep-scroll="page"><div class="page">${{ overview: renderOverview, questions: renderQuestions, feedback: renderFeedbackTab }[S.view]()}</div></div>`}</div>
+      ${isViz && S.panel ? `<aside class="panel" data-keep-scroll="panel"><div class="inner">${renderDetail()}</div></aside>` : ""}
+    </main>
+    ${S.help ? renderHelp() : ""}`;
+  renderBanner();
+  for (const [k, top] of keep) { const el = document.querySelector(`[data-keep-scroll="${k}"]`); if (el) el.scrollTop = top; }
+  afterRender();
+}
+function renderBanner() {
+  const el = document.getElementById("banner");
+  if (!el) return;
+  const parts = [];
+  if (S.data.errors?.length) parts.push(`<div class="banner err">読めないファイルがあります: ${S.data.errors.map(esc).join(" / ")}</div>`);
+  if (S.stale || S.staleReview) parts.push(`<div class="banner">${S.stale ? "ケースや機能のファイルが更新されました。" : "Claude の返信が届きました。"}<button class="btn small" data-act="reload">再読み込み</button></div>`);
+  else if (S.data.review.submittedAt) {
+    const open = S.data.review.feedback.filter((f) => f.status === "open").length;
+    if (open) parts.push(`<div class="banner">${fmtTime(S.data.review.submittedAt)} にレビューを送りました。Claude に「レビューした」と伝えると、対応待ち ${open} 件を反映します。</div>`);
+  }
+  el.innerHTML = parts.join("");
+}
+function renderHelp() {
+  const rows = [["j / k", "次 / 前のケース"], ["o / 2 / 5", "OK / 要修正 / 不要"], ["c", "コメントを書く"], ["/", "検索"], ["Esc", "入力を閉じる"], ["f", "マップ・関係図を全体表示"], ["?", "このヘルプ"]];
+  return `<div class="kbd-help"><table>${rows.map(([k, v]) => `<tr><td><kbd>${k}</kbd></td><td>${v}</td></tr>`).join("")}</table></div>`;
+}
+function renderToolbar() {
+  const d = S.data, f = S.filters;
+  const catOpts = d.catalogCategories.map((cat) => `<optgroup label="${esc(cat)}"><option value="cat:${esc(cat)}" ${f.catalog === `cat:${cat}` ? "selected" : ""}>${esc(cat)}（すべて）</option>${d.catalog.filter((c) => c.category === cat).map((c) => `<option value="${esc(c.key)}" ${f.catalog === c.key ? "selected" : ""} title="${esc(c.description)}">${esc(c.name)}</option>`).join("")}</optgroup>`).join("");
+  const shown = d.cases.filter((c) => caseMatches(c)).length;
+  let extra = "";
+  if (S.view === "map") extra = `<span class="grp">束ね方 <span class="seg"><button class="${S.map.by === "screen" ? "on" : ""}" data-act="map-by" data-v="screen">画面</button><button class="${S.map.by === "perspective" ? "on" : ""}" data-act="map-by" data-v="perspective">観点</button></span></span>
+    <span class="grp">色 <select data-act-change="map-color"><option value="review" ${S.map.color === "review" ? "selected" : ""}>レビュー状態</option><option value="thin" ${S.map.color === "thin" ? "selected" : ""}>観点の厚さ</option><option value="catalog" ${S.map.color === "catalog" ? "selected" : ""}>カタログのカテゴリ</option></select></span>
+    <span class="grp">展開 <button class="btn small" data-act="map-level" data-v="1">グループ</button><button class="btn small" data-act="map-level" data-v="2">機能</button><button class="btn small" data-act="map-level" data-v="3">画面・観点</button><button class="btn small" data-act="map-level" data-v="9">すべて</button></span>`;
+  if (S.view === "table") extra = `<span class="grp"><label><input type="checkbox" data-act-change="table-grouped" ${S.table.grouped ? "checked" : ""}>グループ・機能でまとめる</label>
+    <details class="cols"><summary class="btn small">列</summary><div>${COLUMNS.map(([k, l]) => `<label><input type="checkbox" data-col="${k}" ${S.table.cols.has(k) ? "checked" : ""}> ${l}</label>`).join("")}</div></details>
+    <button class="btn small" data-act="csv">CSV</button></span>`;
+  return `<div class="toolbar">
+    <input type="search" id="q" placeholder="検索  /" value="${esc(f.q)}">
+    <select data-filter="priority"><option value="">優先度</option>${["high", "normal", "low"].map((p) => `<option value="${p}" ${f.priority === p ? "selected" : ""}>優先度 ${PRIORITY_LABEL[p]}</option>`).join("")}</select>
+    <select data-filter="state"><option value="">レビュー状態</option>${Object.entries(STATE_LABEL).map(([k, v]) => `<option value="${k}" ${f.state === k ? "selected" : ""}>${v}</option>`).join("")}<option value="changes" ${f.state === "changes" ? "selected" : ""}>前回から新規・更新</option></select>
+    <select data-filter="perspective"><option value="">観点</option>${d.perspectives.map((p) => `<option ${f.perspective === p ? "selected" : ""}>${esc(p)}</option>`).join("")}</select>
+    <select data-filter="catalog"><option value="">カタログ観点</option><option value="none" ${f.catalog === "none" ? "selected" : ""}>カタログの観点なし</option>${catOpts}</select>
+    <label><input type="checkbox" data-filter="question" ${f.question ? "checked" : ""}>確認事項あり</label>
+    <span class="muted small">${shown} / ${d.cases.length} 件</span>${filtersActive() || f.q ? `<a class="small" data-act="clear-filters">解除</a>` : ""}
+    ${extra}
+    <span class="spacer"></span><button class="btn small" data-act="toggle-panel">${S.panel ? "詳細を隠す" : "詳細を出す"}</button>
+  </div>`;
+}
+
+// ---------- マインドマップ ----------
+// ノード: 全体 → 機能グループ → 機能 → 画面（または観点）→ ケース
+function buildTree() {
+  const root = { key: "all", kind: "all", id: null, label: S.data.target || "全体", children: [] };
+  for (const [group, feats] of IX.groups) {
+    const g = { key: `g:${group}`, kind: "group", id: group, label: group, children: [] };
+    for (const f of feats) {
+      if (!featureVisible(f)) continue;
+      const cs = (IX.casesByFeature.get(f.id) ?? []).filter((c) => caseMatches(c, false));
+      const fn = { key: `f:${f.id}`, kind: "feature", id: f.id, label: f.name, feature: f, children: [] };
+      if (S.map.by === "screen") {
+        const order = (f.screens ?? []).filter((s) => s !== "_layout");
+        if ((f.screens ?? []).includes("_layout")) order.push("_layout");
+        const buckets = new Map(order.map((s) => [s, []]));
+        for (const c of cs) {
+          // ケースは、機能の画面のうち最初に通る画面に置く（複数の画面を通るケースを重ねて描かない）
+          const s = (c.screens ?? []).find((x) => x !== "_layout" && buckets.has(x)) ?? (c.screens ?? []).find((x) => buckets.has(x)) ?? "（画面なし）";
+          if (!buckets.has(s)) buckets.set(s, []);
+          buckets.get(s).push(c);
+        }
+        const empty = [];
+        for (const [s, list] of buckets) {
+          if (!list.length) { empty.push(s); continue; }
+          fn.children.push({ key: `f:${f.id}/s:${s}`, kind: "screen", id: s, label: screenName(s), feature: f, cases: list, children: list.map((c) => caseNode(c, `f:${f.id}/s:${s}`)) });
+        }
+        // ケースが最初に通る画面にならなかった画面は 1 つにまとめる（ナビのように全画面へ行く機能で木が膨らまないように）
+        if (empty.length) fn.children.push({ key: `f:${f.id}/s:_empty`, kind: "empty", id: f.id, label: `ほかの画面 ${empty.length}`, feature: f, screens: empty, cases: [], children: [] });
+      } else {
+        const buckets = new Map();
+        for (const c of cs) { if (!buckets.has(c.perspective)) buckets.set(c.perspective, []); buckets.get(c.perspective).push(c); }
+        for (const p of S.data.perspectives) if (buckets.has(p)) fn.children.push({ key: `f:${f.id}/p:${p}`, kind: "persp", id: p, label: p, feature: f, cases: buckets.get(p), children: buckets.get(p).map((c) => caseNode(c, `f:${f.id}/p:${p}`)) });
+      }
+      g.children.push(fn);
+    }
+    if (g.children.length) root.children.push(g);
+  }
+  return root;
+}
+const caseNode = (c, parent) => ({ key: `${parent}/c:${c.id}`, kind: "case", id: c.id, label: c.title, case: c, children: [] });
+function defaultOpen(root, level) {
+  const open = new Set();
+  (function walk(n, depth) { if (depth < level && n.children.length) { open.add(n.key); n.children.forEach((c) => walk(c, depth + 1)); } })(root, 0);
+  return open;
+}
+function nodeCases(n) {
+  if (n.kind === "case") return [n.case];
+  if (n.cases) return n.cases;
+  return n.children.flatMap(nodeCases);
+}
+function nodeColor(n, cs) {
+  const mode = S.map.color;
+  if (n.kind === "case") {
+    if (mode === "catalog") { const cat = primaryCategory(n.case); return cat ? IX.catColor.get(cat) : "var(--faint)"; }
+    if (mode === "thin") return "var(--faint)";
+    return STATE_COLOR[caseState(n.case)];
+  }
+  if (mode === "thin") {
+    if (n.kind === "feature") return THIN_COLOR[thinness(n.feature, IX.casesByFeature.get(n.feature.id) ?? [])];
+    if (n.kind === "empty") return "var(--faint)";
+    if (n.kind === "screen" || n.kind === "persp") return cs.length === 0 ? "var(--bad)" : cs.length < 2 ? "var(--warn)" : "var(--ok)";
+    if (n.kind === "group") { const ts = n.children.map((f) => thinness(f.feature, IX.casesByFeature.get(f.feature.id) ?? [])); return THIN_COLOR[ts.includes("thin") ? "thin" : ts.includes("mid") ? "mid" : "rich"]; }
+    return "var(--muted)";
+  }
+  if (mode === "catalog" || n.kind === "empty") return "var(--muted)";
+  const sc = stateCounts(cs);
+  if (sc.open) return "var(--warn)";
+  if (sc.answered) return "var(--info)";
+  if (cs.length && sc.ok === cs.length) return "var(--ok)";
+  if (sc.ok || sc.changed) return "var(--accent)";
+  return "var(--faint)";
+}
+const textWidth = (s) => [...String(s)].reduce((w, ch) => w + (ch.charCodeAt(0) > 0x2e80 ? 12.5 : 7.4), 0);
+const clip = (s, n) => ([...String(s)].length > n ? [...String(s)].slice(0, n - 1).join("") + "…" : String(s));
+function nodeTarget(n) { return n.kind === "persp" || n.kind === "empty" ? { kind: "feature", id: n.feature.id } : n.kind === "screen" ? { kind: "screen", id: n.id } : { kind: n.kind, id: n.id }; }
+function renderMap() {
+  const root = buildTree();
+  if (!S.map.open) S.map.open = defaultOpen(root, 2);
+  const q = S.filters.q.trim();
+  // 検索に当たるノードの祖先を開き、当たったノードを強調する
+  const hits = new Set();
+  if (q) (function walk(n, path) {
+    const match = n.kind === "case" ? textMatch(n.case) : String(n.label).toLowerCase().includes(q.toLowerCase());
+    if (match) { hits.add(n.key); path.forEach((p) => S.map.open.add(p)); }
+    n.children.forEach((c) => walk(c, [...path, n.key]));
+  })(root, []);
+  const ROW = 24;
+  let cursor = 0;
+  const nodes = [], edges = [];
+  (function lay(n, depth) {
+    n.depth = depth;
+    const open = S.map.open.has(n.key) && n.children.length;
+    if (open) { n.children.forEach((c) => lay(c, depth + 1)); n.y = (n.children[0].y + n.children[n.children.length - 1].y) / 2; }
+    else { n.y = cursor; cursor += ROW; }
+    n.isOpen = open;
+    nodes.push(n);
+    if (open) for (const c of n.children) edges.push([n, c]);
+  })(root, 0);
+  // 列の位置は、その深さで一番長いラベルに合わせる（長い機能名が子のノードに重ならないように）
+  const maxW = [];
+  for (const n of nodes) maxW[n.depth] = Math.max(maxW[n.depth] ?? 0, labelWidth(n));
+  const colX = [0];
+  for (let i = 1; i < maxW.length; i++) colX[i] = colX[i - 1] + maxW[i - 1] + 44;
+  for (const n of nodes) n.x = colX[n.depth];
+  // 選んだものと同じ種類のノードだけ強調する（観点の束やまとめたノードまで光らせない）。画面は使われている所すべてを光らせる
+  const selKey = (n) => n.kind === S.sel.kind && n.id === S.sel.id;
+  const out = [];
+  for (const [a, b] of edges) {
+    const x1 = a.x + 8 + labelWidth(a), x2 = b.x - 2, mx = (x1 + x2) / 2;
+    out.push(`<path class="edge ${q && !hits.has(b.key) && !hasHitBelow(b, hits) ? "dim" : ""}" d="M${x1},${a.y} C${mx},${a.y} ${mx},${b.y} ${x2},${b.y}"/>`);
+  }
+  for (const n of nodes) {
+    const cs = nodeCases(n);
+    const color = nodeColor(n, cs);
+    const w = labelWidth(n);
+    const fb = n.kind === "persp" ? { open: 0, wait: 0 } : n.kind === "screen" ? fbCounts("screen", n.id) : fbCounts(n.kind, n.id);
+    const dim = q && !hits.has(n.key) && !hasHitBelow(n, hits);
+    const hasKids = n.children.length > 0;
+    const flag = n.kind === "case" ? caseFlag(n.case) : null;
+    out.push(`<g class="node ${selKey(n) ? "sel" : ""} ${hits.has(n.key) ? "hit" : ""} ${dim ? "dim" : ""}" transform="translate(${n.x},${n.y})" data-act="node" data-key="${esc(n.key)}">
+      <title>${esc(nodeTitle(n, cs))}</title>
+      <rect class="bg" x="-8" y="-11" width="${w + 22}" height="22"/>
+      ${hasKids ? `<circle r="5.5" cx="0" cy="0" fill="${n.isOpen ? "var(--panel)" : color}" stroke="${color}" stroke-width="2" data-act="toggle-node" data-key="${esc(n.key)}"/>` : `<circle r="4" fill="${color}"/>`}
+      <text x="10" y="1">${nodeLabelSvg(n, cs, fb, flag)}</text>
+    </g>`);
+  }
+  const height = Math.max(cursor, 200);
+  S.map.size = { w: colX[colX.length - 1] + (maxW[maxW.length - 1] ?? 200) + 40, h: height };
+  if (!S.map.t) S.map.t = { x: 24, y: 24, k: 1 };
+  const t = S.map.t;
+  const legend = S.map.color === "review" ? ["ok", "answered", "open", "changed", "pending"].map((k) => `<i style="background:${STATE_COLOR[k]}"></i>${STATE_LABEL[k]}`).join("")
+    : S.map.color === "thin" ? Object.entries(THIN_LABEL).map(([k, v]) => `<i style="background:${THIN_COLOR[k]}"></i>${v}`).join("") + `<span style="margin-left:10px">（機能: 優先度に対する観点の種類数 / 画面・観点: ケース数）</span>`
+    : S.data.catalogCategories.map((c) => `<i style="background:${IX.catColor.get(c)}"></i>${esc(c)}`).join("") + `<i style="background:var(--faint)"></i>なし`;
+  return `<svg class="viz" id="viz" data-viz="map"><g id="vizg" transform="translate(${t.x},${t.y}) scale(${t.k})">${out.join("")}</g></svg>
+    <div class="vizlegend">${legend}</div>
+    <div class="vizbar"><button class="btn small" data-act="zoom" data-v="1.25">＋</button><button class="btn small" data-act="zoom" data-v="0.8">－</button><button class="btn small" data-act="fit">全体</button></div>`;
+}
+function hasHitBelow(n, hits) { return n.children.some((c) => hits.has(c.key) || hasHitBelow(c, hits)); }
+function labelWidth(n) {
+  if (n.kind === "empty") return textWidth(n.label) + 18;
+  const base = n.kind === "case" ? clip(n.label, 30) : clip(n.label, 22);
+  const cs = n.kind === "case" ? [] : nodeCases(n);
+  const kinds = n.kind === "feature" ? textWidth(` · 観点${new Set(cs.map((c) => c.perspective)).size}`) + 16 : 0;
+  const fb = n.kind === "case" ? 0 : 28;
+  return textWidth(base) + (n.kind === "case" ? 24 : textWidth(` ${cs.length}件`) + 6) + kinds + fb + 18;
+}
+function nodeLabelSvg(n, cs, fb, flag) {
+  if (n.kind === "empty") return `<tspan class="sub">${esc(n.label)}</tspan>`;
+  if (n.kind === "case") return `<tspan class="label">${esc(clip(n.label, 30))}</tspan>${flag ? `<tspan class="sub" dx="4">${flag === "new" ? "新規" : "更新"}</tspan>` : ""}${n.case.question ? `<tspan class="sub" dx="4" style="fill:var(--warn)">?</tspan>` : ""}${fb.open ? `<tspan dx="4" style="fill:var(--warn)">●</tspan>` : fb.wait ? `<tspan dx="4" style="fill:var(--info)">●</tspan>` : ""}`;
+  const prio = n.kind === "feature" && n.feature.priority === "high" ? `<tspan class="prio">高 </tspan>` : n.kind === "feature" && n.feature.priority === "low" ? `<tspan class="sub">低 </tspan>` : "";
+  const kinds = n.kind === "feature" ? ` · 観点${new Set(cs.map((c) => c.perspective)).size}` : "";
+  return `${prio}<tspan class="label" style="${n.kind === "group" || n.kind === "all" ? "font-weight:700" : ""}">${esc(clip(n.label, 22))}</tspan><tspan class="sub" dx="5">${cs.length}件${kinds}</tspan>${fb.open ? `<tspan dx="4" style="fill:var(--warn)">●${fb.open}</tspan>` : ""}${fb.wait ? `<tspan dx="4" style="fill:var(--info)">●${fb.wait}</tspan>` : ""}`;
+}
+function nodeTitle(n, cs) {
+  if (n.kind === "empty") return `ケースが最初に通る画面にならなかった画面:\n${n.screens.map(screenName).join("\n")}`;
+  if (n.kind === "case") return `${n.case.id} ${n.case.title}\n観点: ${n.case.perspective} / ${STATE_LABEL[caseState(n.case)]}`;
+  const sc = stateCounts(cs);
+  return `${n.label}（${cs.length} 件）\n${Object.entries(sc).filter(([, v]) => v).map(([k, v]) => `${STATE_LABEL[k]} ${v}`).join(" / ")}${n.kind === "feature" ? `\n${THIN_LABEL[thinness(n.feature, IX.casesByFeature.get(n.feature.id) ?? [])]}` : ""}\nクリックで詳細、丸で開閉`;
+}
+function findNode(key) {
+  let hit = null;
+  (function walk(n) { if (n.key === key) hit = n; else n.children.forEach(walk); })(buildTree());
+  return hit;
+}
+
+// ---------- 関係図（機能 × 画面） ----------
+function renderRel() {
+  const d = S.data;
+  const ROW = 26, X1 = 20, W1 = 300, X2 = 640;
+  const feats = d.features.filter(featureVisible);
+  const screens = [...d.screens].sort((a, b) => (a.id === "_layout" ? -1 : b.id === "_layout" ? 1 : 0));
+  const fy = new Map(), sy = new Map(), out = [];
+  let y = 30;
+  for (const [group, list] of IX.groups) {
+    const vis = list.filter((f) => feats.includes(f));
+    if (!vis.length) continue;
+    out.push(`<text class="head" x="${X1}" y="${y}">${esc(group)}</text>`); y += 20;
+    for (const f of vis) { fy.set(f.id, y); y += ROW; }
+    y += 6;
+  }
+  const hF = y;
+  const used = (s) => feats.filter((f) => (f.screens ?? []).includes(s.id));
+  y = 50;
+  const excluded = new Set(d.excludedScreens.map((x) => x.screen));
+  for (const s of screens) { sy.set(s.id, y); y += ROW; }
+  const height = Math.max(hF, y) + 20;
+  out.push(`<text class="head" x="${X1}" y="12">機能</text><text class="head" x="${X2}" y="12">画面（使う機能の数）</text>`);
+  const sel = S.sel, hov = S.rel.hover;
+  const focus = hov ?? (sel.kind === "feature" || sel.kind === "screen" ? sel : sel.kind === "case" ? { kind: "feature", id: IX.caseById.get(sel.id)?.feature } : null);
+  const related = (f, s) => focus && ((focus.kind === "feature" && focus.id === f) || (focus.kind === "screen" && focus.id === s));
+  for (const f of feats) for (const s of f.screens ?? []) {
+    if (!sy.has(s)) continue;
+    const n = (IX.casesByFeature.get(f.id) ?? []).filter((c) => (c.screens ?? []).includes(s)).length;
+    const y1 = fy.get(f.id), y2 = sy.get(s), x1 = X1 + W1, x2 = X2 - 10, mx = (x1 + x2) / 2;
+    const cls = focus ? (related(f.id, s) ? "on" : "off") : "";
+    out.push(`<path class="rel ${cls}" stroke-width="${(1 + Math.min(4, n / 3)).toFixed(1)}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"><title>${esc(`${f.name} → ${screenName(s)}: ${n} 件`)}</title></path>`);
+  }
+  const relF = new Set(), relS = new Set();
+  if (focus) for (const f of feats) for (const s of f.screens ?? []) if (related(f.id, s)) { relF.add(f.id); relS.add(s); }
+  for (const f of feats) {
+    const cs = IX.casesByFeature.get(f.id) ?? [];
+    const on = sel.kind === "feature" && sel.id === f.id;
+    const dim = focus && !relF.has(f.id);
+    out.push(`<g class="node ${on ? "sel" : ""} ${dim ? "dim" : ""}" transform="translate(${X1},${fy.get(f.id)})" data-act="rel-node" data-kind="feature" data-v="${esc(f.id)}">
+      <rect class="bg" x="-6" y="-11" width="${W1 + 6}" height="22"/><circle r="4.5" cx="4" fill="${THIN_COLOR[thinness(f, cs)]}"/>
+      <text x="14" y="1">${f.priority === "high" ? `<tspan class="prio">高 </tspan>` : ""}<tspan class="label">${esc(clip(f.name, 20))}</tspan><tspan class="sub" dx="5">${cs.length}件 · 画面${(f.screens ?? []).length}</tspan></text></g>`);
+  }
+  for (const s of screens) {
+    const n = used(s).length;
+    const on = sel.kind === "screen" && sel.id === s.id;
+    const dim = focus && !relS.has(s.id);
+    const color = excluded.has(s.id) ? "var(--faint)" : n === 0 ? "var(--bad)" : s.id === "_layout" ? "var(--info)" : n > 2 ? "var(--accent)" : "var(--muted)";
+    out.push(`<g class="node ${on ? "sel" : ""} ${dim ? "dim" : ""}" transform="translate(${X2},${sy.get(s.id)})" data-act="rel-node" data-kind="screen" data-v="${esc(s.id)}">
+      <rect class="bg" x="-6" y="-11" width="300" height="22"/><circle r="4.5" cx="0" fill="${color}"/>
+      <text x="10" y="1"><tspan class="label">${esc(clip(screenName(s.id), 24))}</tspan><tspan class="sub" dx="5">${excluded.has(s.id) ? "対象外" : `${n} 機能`}</tspan></text></g>`);
+  }
+  S.rel.size = { w: X2 + 320, h: height };
+  if (!S.rel.t) S.rel.t = { x: 24, y: 16, k: 1 };
+  const t = S.rel.t;
+  return `<svg class="viz" id="viz" data-viz="rel"><g id="vizg" transform="translate(${t.x},${t.y}) scale(${t.k})">${out.join("")}</g></svg>
+    <div class="vizlegend">機能: <i style="background:var(--ok)"></i>観点が十分<i style="background:var(--warn)"></i>やや薄い<i style="background:var(--bad)"></i>薄い　　画面: <i style="background:var(--info)"></i>共通部品<i style="background:var(--accent)"></i>3 機能以上で使う<i style="background:var(--bad)"></i>どの機能も使わない　　線の太さ = 通るケース数</div>
+    <div class="vizbar"><button class="btn small" data-act="zoom" data-v="1.25">＋</button><button class="btn small" data-act="zoom" data-v="0.8">－</button><button class="btn small" data-act="fit">全体</button></div>`;
+}
+
+// ---------- 表 ----------
+function cellValue(c, k) {
+  const f = IX.featById.get(c.feature);
+  switch (k) {
+    case "id": return c.id;
+    case "group": return f?.group ?? "";
+    case "feature": return f?.name ?? c.feature;
+    case "priority": return PRIORITY_LABEL[f?.priority] ?? "";
+    case "screens": return (c.screens ?? []).map(screenName).join(", ");
+    case "perspective": return c.perspective;
+    case "catalog": return [...(c.catalogPerspectives ?? []).map((x) => IX.catByKey.get(x)?.name ?? x), ...(c.perspectiveNote ? [c.perspectiveNote] : [])].join(" / ");
+    case "title": return c.title;
+    case "preconditions": return c.preconditions ?? "";
+    case "steps": return (c.steps ?? []).map((s, i) => `${i + 1}. ${s}`).join("\n");
+    case "expected": return c.expected;
+    case "question": return c.question ?? "";
+    case "state": return STATE_LABEL[caseState(c)];
+    case "fb": return fbCounts("case", c.id).all;
+    default: return "";
+  }
+}
+function sortCases(list) {
+  if (!S.table.sort) return list;
+  const k = S.table.sort, dir = S.table.dir;
+  return [...list].sort((a, b) => { const x = cellValue(a, k), y = cellValue(b, k); return (typeof x === "number" ? x - y : String(x).localeCompare(String(y), "ja")) * dir; });
+}
+function cellHtml(c, k) {
+  switch (k) {
+    case "id": return `<code class="muted">${esc(c.id)}</code>`;
+    case "priority": { const p = IX.featById.get(c.feature)?.priority; return `<span class="badge prio-${p}">${PRIORITY_LABEL[p] ?? ""}</span>`; }
+    case "screens": return (c.screens ?? []).map((s) => `<span class="chip">${esc(screenName(s))}</span>`).join("");
+    case "perspective": return `<span class="chip">${esc(c.perspective)}</span>`;
+    case "catalog": return [...(c.catalogPerspectives ?? []).map((x) => `<span class="chip cat" title="${esc(IX.catByKey.get(x)?.description ?? "")}">${esc(IX.catByKey.get(x)?.name ?? x)}</span>`), ...(c.perspectiveNote ? [`<span class="chip free">${esc(c.perspectiveNote)}</span>`] : [])].join("");
+    case "title": { const fl = caseFlag(c); return `${esc(c.title)}${fl ? ` <span class="badge acc">${fl === "new" ? "新規" : "更新"}</span>` : ""}`; }
+    case "steps": return `<ol>${(c.steps ?? []).map((s) => `<li>${esc(s)}</li>`).join("")}</ol>`;
+    case "question": return c.question ? `<span class="q">${esc(c.question)}</span>` : "";
+    case "state": { const st = caseState(c); return `<span class="badge ${STATE_CLASS[st]}">${STATE_LABEL[st]}</span>`; }
+    case "fb": { const n = fbCounts("case", c.id); return n.all ? `<span class="badge ${n.open ? "warn" : n.wait ? "info" : ""}">${n.all}</span>` : ""; }
+    default: return esc(cellValue(c, k));
+  }
+}
+function tableColumns() { return COLUMNS.filter(([k]) => S.table.cols.has(k) && !(S.table.grouped && (k === "group" || k === "feature"))); }
+function renderTable() {
+  const cols = tableColumns();
+  const head = `<tr><th>レビュー</th>${cols.map(([k, l]) => `<th class="sort" data-act="sort" data-v="${k}">${l}${S.table.sort === k ? (S.table.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr>`;
+  // 状態を付けるボタンは左端に置く（列が多くても横スクロールせずに付けられるように）
+  const row = (c) => `<tr class="row ${S.sel.kind === "case" && S.sel.id === c.id ? "sel" : ""}" data-act="select-case" data-v="${esc(c.id)}" id="row-${esc(c.id)}">
+    <td class="acts">${cellHtml(c, "state")}<div style="margin-top:3px"><button data-act="quick" data-type="ok" data-v="${esc(c.id)}" title="OK（o）">OK</button> <button data-act="quick" data-type="fix" data-v="${esc(c.id)}" title="要修正（2）">要修正</button> <button data-act="quick" data-type="drop" data-v="${esc(c.id)}" title="不要（5）">不要</button></div></td>
+    ${cols.map(([k]) => `<td class="${["title", "expected", "steps", "preconditions", "question"].includes(k) ? "wrap" : ""}">${cellHtml(c, k)}</td>`).join("")}</tr>`;
+  let body = "";
+  const span = cols.length + 1;
+  if (S.table.grouped) {
+    for (const [group, feats] of IX.groups) {
+      const rows = feats.map((f) => [f, sortCases((IX.casesByFeature.get(f.id) ?? []).filter((c) => caseMatches(c)))]).filter(([f, cs]) => cs.length && featureVisible(f));
+      if (!rows.length) continue;
+      const gKey = `g:${group}`, gc = rows.reduce((n, [, cs]) => n + cs.length, 0);
+      body += `<tr class="ghead" data-act="table-collapse" data-v="${esc(gKey)}"><td colspan="${span}">${S.table.collapsed.has(gKey) ? "▸" : "▾"} ${esc(group)} <span class="muted small">${gc} 件</span> <a class="small" data-act="select-group" data-v="${esc(group)}">詳細</a></td></tr>`;
+      if (S.table.collapsed.has(gKey)) continue;
+      for (const [f, cs] of rows) {
+        const fKey = `f:${f.id}`, n = fbCounts("feature", f.id);
+        body += `<tr class="fhead" data-act="table-collapse" data-v="${esc(fKey)}"><td colspan="${span}">　${S.table.collapsed.has(fKey) ? "▸" : "▾"} ${esc(f.name)} <span class="badge prio-${f.priority}">${PRIORITY_LABEL[f.priority]}</span> <span class="muted small">${cs.length} 件</span>${n.open ? ` <span class="badge warn">FB ${n.open}</span>` : ""} <a class="small" data-act="select-feature" data-v="${esc(f.id)}">詳細</a></td></tr>`;
+        if (!S.table.collapsed.has(fKey)) body += cs.map(row).join("");
+      }
+    }
+  } else body = orderedCases().map(row).join("");
+  return `<div class="scroll" data-keep-scroll="table"><table class="grid cases">${head}${body || `<tr><td colspan="${span}" class="empty">該当するケースはありません</td></tr>`}</table></div>`;
+}
+function exportCsv() {
+  const cols = [...COLUMNS.filter(([k]) => S.table.cols.has(k) || k === "group" || k === "feature" || k === "id"), ["state", "レビュー"]];
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [cols.map(([, l]) => q(l)).join(","), ...orderedCases().map((c) => cols.map(([k]) => q(cellValue(c, k))).join(","))];
+  const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `testcases-${S.data.target || "review"}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---------- 詳細パネル ----------
+function renderDetail() {
+  const s = S.sel;
+  if (s.kind === "case") return renderCaseDetail(s.id);
+  if (s.kind === "feature") return renderFeatureDetail(s.id);
+  if (s.kind === "group") return renderGroupDetail(s.id);
+  if (s.kind === "screen") return renderScreenDetail(s.id);
+  return renderAllDetail();
+}
+function caseList(cs) {
+  if (!cs.length) return `<div class="empty">ケースはありません</div>`;
+  return `<div class="clist">${cs.map((c) => { const st = caseState(c); return `<div class="ci" data-act="select-case" data-v="${esc(c.id)}"><span class="dot" style="background:${STATE_COLOR[st]}" title="${STATE_LABEL[st]}"></span><span class="chip">${esc(c.perspective)}</span><span class="t">${esc(c.title)}</span>${c.question ? `<span class="badge warn">?</span>` : ""}${fbCounts("case", c.id).open ? `<span class="badge warn">FB</span>` : ""}</div>`; }).join("")}</div>`;
+}
+function renderAllDetail() {
+  const d = S.data;
+  return `<div class="dhead"><div class="path">全体</div><h2>${esc(d.target || "全体")}</h2></div>
+    <div class="small muted" style="margin-bottom:8px">機能 ${d.features.length} / 画面 ${d.screens.length} / ケース ${d.cases.length}。マップのノードや表の行を選ぶと、ここに詳細とフィードバック欄が出ます。</div>
+    <section class="box"><h2>全体へのフィードバック <span class="sub">例: 全体として境界値が薄い</span></h2>${renderTargetFeedback("all", null)}</section>`;
+}
+function perspectiveChips(cs) {
+  const ps = new Map(); for (const c of cs) ps.set(c.perspective, (ps.get(c.perspective) ?? 0) + 1);
+  const cats = new Map(); for (const c of cs) for (const k of new Set((c.catalogPerspectives ?? []).map((x) => IX.catByKey.get(x)?.category).filter(Boolean))) cats.set(k, (cats.get(k) ?? 0) + 1);
+  return `<div class="k">観点</div><div>${S.data.perspectives.map((p) => `<span class="chip" style="${ps.get(p) ? "" : "opacity:.4"}">${esc(p)} ${ps.get(p) ?? 0}</span>`).join("")}</div>
+    <div class="k">カタログ</div><div>${S.data.catalogCategories.map((k) => `<span class="chip cat" style="${cats.get(k) ? "" : "opacity:.35"}">${esc(k)} ${cats.get(k) ?? 0}</span>`).join("")}</div>`;
+}
+function renderGroupDetail(group) {
+  const feats = IX.groups.get(group) ?? [];
+  const cs = feats.flatMap((f) => IX.casesByFeature.get(f.id) ?? []);
+  return `<div class="dhead"><div class="path">機能グループ</div><h2>${esc(group)}</h2></div>
+    <div class="kv"><div class="k">規模</div><div>機能 ${feats.length} / ケース ${cs.length}</div>${perspectiveChips(cs)}</div>
+    <section class="box"><h2>このグループへのフィードバック <span class="sub">例: 認証全体をもっと網羅したい</span></h2>${renderTargetFeedback("group", group)}</section>
+    <section class="box"><h2>機能</h2>${feats.map((f) => { const c = IX.casesByFeature.get(f.id) ?? []; const t = thinness(f, c); return `<div class="ci clist" style="display:flex;gap:6px;align-items:center;padding:3px 0;cursor:pointer" data-act="select-feature" data-v="${esc(f.id)}"><span class="dot" style="background:${THIN_COLOR[t]}" title="${THIN_LABEL[t]}"></span><span style="flex:1">${esc(f.name)}</span><span class="badge prio-${f.priority}">${PRIORITY_LABEL[f.priority]}</span><span class="muted small">${c.length} 件</span></div>`; }).join("")}</section>`;
+}
+function renderFeatureDetail(id) {
+  const f = IX.featById.get(id);
+  if (!f) return `<div class="empty">機能が見つかりません</div>`;
+  const cs = IX.casesByFeature.get(id) ?? [];
+  const t = thinness(f, cs);
+  return `<div class="dhead"><div class="path"><a data-act="select-group" data-v="${esc(f.group)}">${esc(f.group)}</a> / <code>${esc(f.id)}</code></div>
+      <h2>${esc(f.name)} <span class="badge prio-${f.priority}">優先度 ${PRIORITY_LABEL[f.priority] ?? f.priority}</span> <span class="badge" style="color:${THIN_COLOR[t]}">${THIN_LABEL[t]}</span></h2></div>
+    <div class="kv">
+      ${f.description ? `<div class="k">説明</div><div>${esc(f.description)}</div>` : ""}
+      <div class="k">画面</div><div>${(f.screens ?? []).map((s) => `<a class="chip" data-act="select-screen" data-v="${esc(s)}">${esc(screenName(s))}</a>`).join("") || `<span class="muted">なし</span>`}</div>
+      ${f.basis?.length ? `<div class="k">根拠</div><div>${f.basis.map((b) => `<span class="chip">${esc(b)}</span>`).join("")}</div>` : ""}
+      ${perspectiveChips(cs)}
+    </div>
+    <section class="box"><h2>この機能へのフィードバック</h2>${renderTargetFeedback("feature", id)}</section>
+    <section class="box"><h2>ケース ${cs.length} 件 <span class="sub">選ぶと詳細</span></h2>${caseList(cs)}</section>`;
+}
+function renderCaseDetail(id) {
+  const c = IX.caseById.get(id);
+  if (!c) return `<div class="empty">ケースが見つかりません（削除された可能性があります）</div>`;
+  const f = IX.featById.get(c.feature);
+  const st = caseState(c), flag = caseFlag(c);
+  const cats = (c.catalogPerspectives ?? []).map((k) => { const it = IX.catByKey.get(k); return `<span class="chip cat" title="${esc(it ? `${it.category}: ${it.description}` : "")}">${esc(it?.name ?? k)}</span>`; }).join("");
+  const list = orderedCases(), i = list.findIndex((x) => x.id === id);
+  return `<div class="dhead"><div class="path"><a data-act="select-group" data-v="${esc(f?.group)}">${esc(f?.group)}</a> / <a data-act="select-feature" data-v="${esc(c.feature)}">${esc(f?.name ?? c.feature)}</a> / <code>${esc(c.id)}</code>
+      <span style="float:right" class="small">${i >= 0 ? `${i + 1} / ${list.length}` : ""} <kbd>j</kbd><kbd>k</kbd></span></div>
+      <h2>${esc(c.title)}</h2>
+      <div><span class="chip">${esc(c.perspective)}</span><span class="badge ${STATE_CLASS[st]}">${STATE_LABEL[st]}</span> ${flag ? `<span class="badge acc">${flag === "new" ? "新規" : "更新"}</span>` : ""}</div></div>
+    <div class="kv">
+      ${cats || c.perspectiveNote ? `<div class="k">観点</div><div>${cats}${c.perspectiveNote ? `<span class="chip free">${esc(c.perspectiveNote)}</span>` : ""}</div>` : ""}
+      ${c.preconditions ? `<div class="k">前提</div><div>${esc(c.preconditions)}</div>` : ""}
+      <div class="k">手順</div><div><ol>${(c.steps ?? []).map((s) => `<li>${esc(s)}</li>`).join("")}</ol></div>
+      <div class="k">期待値</div><div>${esc(c.expected)}</div>
+      ${c.question ? `<div class="k">確認事項</div><div class="q">${esc(c.question)}</div>` : ""}
+      ${c.basis ? `<div class="k">根拠</div><div class="small">${esc(Array.isArray(c.basis) ? c.basis.join(" / ") : c.basis)}</div>` : ""}
+      <div class="k">画面</div><div>${(c.screens ?? []).map((s) => `<a class="chip" data-act="select-screen" data-v="${esc(s)}">${esc(screenName(s))}</a>`).join("")}</div>
+      <div class="k">要素</div><div><details><summary class="small muted">確認する要素 ${(c.covers ?? []).length}</summary>${(c.covers ?? []).map((x) => `<div class="mono small muted">${esc(x)}</div>`).join("")}</details></div>
+    </div>
+    <section class="box"><h2>このケースへのフィードバック</h2>${renderTargetFeedback("case", id)}</section>`;
+}
+function renderScreenDetail(id) {
+  const d = S.data, s = IX.screenById.get(id);
+  if (!s) return `<div class="empty">画面が見つかりません</div>`;
+  const covered = new Map();
+  for (const c of d.cases) for (const x of c.covers ?? []) { if (!covered.has(x)) covered.set(x, []); covered.get(x).push(c.id); }
+  const feats = d.features.filter((f) => (f.screens ?? []).includes(id));
+  const cs = d.cases.filter((c) => (c.screens ?? []).includes(id));
+  const ex = d.excludedScreens.find((x) => x.screen === id);
+  return `<div class="dhead"><div class="path">画面</div><h2>${esc(screenName(id))} <span class="muted small">${esc(s.title)}</span></h2></div>
+    ${ex ? `<div class="q" style="margin-bottom:8px">対象外: ${esc(ex.reason)}</div>` : ""}
+    <div class="kv"><div class="k">機能</div><div>${feats.map((f) => `<a class="chip" data-act="select-feature" data-v="${esc(f.id)}">${esc(f.name)}</a>`).join("") || `<span class="muted">なし</span>`}</div></div>
+    <section class="box"><h2>この画面へのフィードバック <span class="sub">例: 表示崩れの観点でやってほしい</span></h2>${renderTargetFeedback("screen", id)}</section>
+    <section class="box"><h2>この画面を通るケース ${cs.length}</h2>${caseList(cs)}</section>
+    <section class="box"><h2>要素 ${s.elements.length} <span class="sub">ケースで確認 / 対象外 / 未確認</span></h2><div class="el-list">${s.elements.map((e) => {
+      const ids = covered.get(e.id); const x = d.excludedElements[e.id];
+      return `<span class="mono small">${esc(e.id.split("#").slice(1).join("#") || e.id)}${e.source ? ` <span class="muted">(${esc(e.source)})</span>` : ""}</span><span class="small">${ids ? ids.slice(0, 2).map((cid) => `<a class="chip" data-act="select-case" data-v="${esc(cid)}">${esc(cid)}</a>`).join("") + (ids.length > 2 ? `<span class="muted">+${ids.length - 2}</span>` : "") : x ? `<span class="muted" title="${esc(x.reason)}">対象外</span>` : ex ? `<span class="muted">画面ごと対象外</span>` : `<span class="badge warn">未確認</span>`}</span>`;
+    }).join("")}</div></section>`;
+}
+
+// ---------- フィードバック（作成とスレッド） ----------
+const compKey = (kind, id) => `${kind}:${id ?? ""}`;
+function renderTargetFeedback(kind, id) { return `${kind === "case" ? renderQuickStates(id) : ""}${renderComposer(kind, id)}${renderThread(fbFor(kind, id))}`; }
+// ケースの素早い状態付け（表と同じ OK / 要修正 / 不要）。要修正はコメント欄に何を直すかを書いてもらう
+function renderQuickStates(id) {
+  return `<div class="composer"><div class="types"><span class="small muted">状態</span>
+    <button class="btn small" data-act="quick" data-type="ok" data-v="${esc(id)}">OK<kbd>o</kbd></button>
+    <button class="btn small ${S.composer?.key === compKey("case", id) && S.composer.type === "fix" ? "on" : ""}" data-act="quick" data-type="fix" data-v="${esc(id)}">要修正<kbd>2</kbd></button>
+    <button class="btn small" data-act="quick" data-type="drop" data-v="${esc(id)}">不要<kbd>5</kbd></button></div></div>`;
+}
+// フィードバックは自由記述のコメント。観点カタログのタグは、書くときの任意の補助
+function renderComposer(kind, id) {
+  const key = compKey(kind, id);
+  const cur = S.composer?.key === key ? S.composer : { key, kind, id, type: "comment", comment: "", perspectives: [], custom: [], showTags: false, idle: true };
+  const tags = cur.showTags ? `<div class="pp">${S.data.catalogCategories.map((cat) => `<div class="cat">${esc(cat)}</div>${S.data.catalog.filter((c) => c.category === cat).map((c) => `<label title="${esc(c.description)}&#10;当てはまる仕様: ${esc(c.application_hint)}"><input type="checkbox" data-act="pick" data-key="${esc(key)}" value="${esc(c.key)}" ${cur.perspectives.includes(c.key) ? "checked" : ""}>${esc(c.name)}</label>`).join("")}`).join("")}</div>
+    <div class="custom"><input id="custom-p" data-key="${esc(key)}" placeholder="カタログに無い観点を入れて Enter（例: 権限ごとの表示差）"></div>` : "";
+  const chosen = [...cur.perspectives.map((k) => `<span class="chip cat">${esc(IX.catByKey.get(k)?.name ?? k)}</span>`), ...cur.custom.map((p, i) => `<span class="chip free">${esc(p)} <a data-act="unpick-custom" data-v="${i}">×</a></span>`)].join("");
+  const ph = cur.type === "fix" ? "何を直してほしいか" : { all: "全体へのコメント（例: 全体として境界値が薄い）", group: "このグループへのコメント（例: もっと網羅したい）", feature: "この機能へのコメント", screen: "この画面へのコメント（例: 表示崩れも見てほしい）", case: "このケースへのコメント" }[kind];
+  return `<div class="composer"><div class="form" style="margin-top:6px">
+    <textarea id="${cur.idle ? "" : "comp-text"}" data-compose="${esc(key)}" data-kind="${kind}" data-id="${esc(id ?? "")}" placeholder="${esc(ph)}">${esc(cur.comment)}</textarea>
+    ${chosen ? `<div>${chosen}</div>` : ""}${tags}
+    ${cur.error ? `<div class="err">${esc(cur.error)}</div>` : ""}
+    <div style="display:flex;gap:6px;align-items:center"><button class="btn primary small" data-act="send-feedback" data-key="${esc(key)}">${cur.type === "fix" ? "要修正として追加" : "コメントを追加"}</button>
+      <button class="btn small" data-act="toggle-tags" data-key="${esc(key)}">${cur.showTags ? "観点を閉じる" : "観点を付ける"}</button>
+      ${cur.idle ? "" : `<button class="btn small" data-act="cancel-compose">やめる</button>`}<span class="muted small">⌘/Ctrl + Enter で追加</span></div></div></div>`;
+}
+function fbPerspectives(fb) {
+  return [...fb.perspectives.map((k) => { const it = IX.catByKey.get(k); return `<span class="chip cat" title="${esc(it?.description ?? "")}">${esc(it?.name ?? k)}</span>`; }), ...fb.customPerspectives.map((p) => `<span class="chip free">${esc(p)}</span>`)].join("");
+}
+function caseLinks(ids, label) {
+  if (!ids?.length) return "";
+  return `<div class="small"><span class="muted">${label}:</span> ${ids.map((id) => IX.caseById.has(id) ? `<a class="chip" data-act="select-case" data-v="${esc(id)}">${esc(id)}</a>` : `<span class="chip" style="text-decoration:line-through">${esc(id)}</span>`).join("")}</div>`;
+}
+function targetLabel(t) {
+  if (t.kind === "all") return `<a data-act="select-all">全体</a>`;
+  if (t.kind === "case") { const c = IX.caseById.get(t.id); return `<a data-act="select-case" data-v="${esc(t.id)}">${esc(t.id)}</a>${c ? ` <span class="muted">${esc(clip(c.title, 40))}</span>` : ` <span class="muted">（削除済み）</span>`}`; }
+  if (t.kind === "feature") return `機能 <a data-act="select-feature" data-v="${esc(t.id)}">${esc(IX.featById.get(t.id)?.name ?? t.id)}</a>`;
+  if (t.kind === "group") return `グループ <a data-act="select-group" data-v="${esc(t.id)}">${esc(t.id)}</a>`;
+  if (t.kind === "screen") return `画面 <a data-act="select-screen" data-v="${esc(t.id)}">${esc(screenName(t.id))}</a>`;
+  return esc(t.id);
+}
+function renderFb(fb, withTarget) {
+  const agentReplied = fb.replies.some((r) => r.by === "agent");
+  let acts = "";
+  if (fb.status === "done" || fb.status === "wontfix") acts = `<button class="btn small primary" data-act="fb-close" data-v="${fb.id}">確認した（閉じる）</button><button class="btn small" data-act="fb-reopen" data-v="${fb.id}">まだ足りない</button>`;
+  else if (fb.status === "open" && !agentReplied) acts = `<button class="btn small" data-act="fb-delete" data-v="${fb.id}">取り消す</button>`;
+  else if (fb.status === "closed" && fb.type !== "ok") acts = `<button class="btn small" data-act="fb-reopen" data-v="${fb.id}">再オープン</button>`;
+  if (fb.type === "ok") acts = `<button class="btn small" data-act="fb-delete" data-v="${fb.id}">取り消す</button>`;
+  if (S.reopen === fb.id) acts = `<textarea id="reopen-text" placeholder="何が足りないか（必須）"></textarea><button class="btn small primary" data-act="fb-reopen-send" data-v="${fb.id}">送る</button><button class="btn small" data-act="fb-reopen-cancel">やめる</button>`;
+  return `<div class="fb">
+    <div class="fh">${withTarget ? `<span class="small">${targetLabel(fb.target)}</span>` : ""}<span class="badge ${TYPE_CLASS[fb.type]}">${esc(S.data.feedbackTypes[fb.type])}</span>${fb.type !== "ok" ? `<span class="badge ${FB_STATUS_CLASS[fb.status]}">${FB_STATUS[fb.status]}</span>` : ""}${fbPerspectives(fb)}<span class="when">${fmtTime(fb.createdAt)}</span></div>
+    ${fb.comment ? `<div class="body">${esc(fb.comment)}</div>` : ""}
+    ${fb.replies.map((r) => r.by === "agent"
+      ? `<div class="reply agent"><div class="who">Claude ・ ${r.status === "wontfix" ? "対応しない" : "対応済み"} ・ ${fmtTime(r.at)}</div><div class="body">${esc(r.text)}</div>${caseLinks(r.cases?.added, "追加")}${caseLinks(r.cases?.changed, "変更")}${caseLinks(r.cases?.removed, "削除")}</div>`
+      : `<div class="reply"><div class="who">${{ close: "確認した", reopen: "まだ足りない", reply: "返信" }[r.action] ?? "返信"} ・ ${fmtTime(r.at)}</div>${r.text ? `<div class="body">${esc(r.text)}</div>` : ""}</div>`).join("")}
+    ${acts ? `<div class="acts">${acts}</div>` : ""}</div>`;
+}
+function renderThread(list, withTarget) { return list.length ? `<div class="thread">${list.map((fb) => renderFb(fb, withTarget)).join("")}</div>` : ""; }
+
+// ---------- 概要・確認事項・フィードバック一覧 ----------
+function heatCell(n, max) {
+  if (!n) return `<td class="h zero">·</td>`;
+  return `<td class="h" style="background:color-mix(in srgb, var(--accent) ${Math.round(12 + (n / Math.max(max, 1)) * 58)}%, transparent)">${n}</td>`;
+}
+function renderOverview() {
+  const d = S.data, counts = stateCounts(d.cases), fb = d.review.feedback.filter((f) => f.type !== "ok");
+  const excluded = new Set(d.excludedScreens.map((x) => x.screen));
+  const a = d.answers ?? {}, B = { yes: "ある", no: "ない", unknown: "分からない" }, L = { no: "不要", yes: "必要", unknown: "分からない" };
+  const removed = IX.hasRound ? Object.keys(IX.known).filter((id) => !IX.caseById.has(id)) : [];
+  const cols = S.matrix === "perspective" ? d.perspectives.filter((p) => d.cases.some((c) => c.perspective === p)) : d.catalogCategories;
+  const hit = (c, p) => (S.matrix === "perspective" ? c.perspective === p : (c.catalogPerspectives ?? []).some((k) => IX.catByKey.get(k)?.category === p));
+  let max = 0;
+  const rows = [];
+  for (const [group, feats] of IX.groups) feats.forEach((f, i) => { const cs = IX.casesByFeature.get(f.id) ?? []; const vals = cols.map((p) => cs.filter((c) => hit(c, p)).length); max = Math.max(max, ...vals); rows.push({ group: i ? "" : group, f, cs, vals }); });
+  return `<div class="cards">
+      <div class="card"><div class="k">機能</div><div class="v">${d.features.length}</div><div class="s">グループ ${IX.groups.size}</div></div>
+      <div class="card"><div class="k">画面</div><div class="v">${d.screens.length - excluded.size}</div><div class="s">対象外 ${excluded.size}</div></div>
+      <div class="card"><div class="k">ケース</div><div class="v">${d.cases.length}</div><div class="s">OK ${counts.ok} / 未確認 ${counts.pending}</div></div>
+      <div class="card"><div class="k">仕様の確認事項</div><div class="v">${d.cases.filter((c) => c.question).length}</div><div class="s">回答待ち ${d.cases.filter((c) => c.question && !fbFor("case", c.id).some((f) => f.type === "answer")).length}</div></div>
+      <div class="card"><div class="k">フィードバック</div><div class="v">${fb.length}</div><div class="s">対応待ち ${fb.filter((f) => f.status === "open").length} / 確認待ち ${fb.filter((f) => f.status === "done" || f.status === "wontfix").length}</div></div>
+    </div>
+    <section class="box"><h2>前提 <span class="sub">問診の回答</span></h2>
+      <div>保存・送信するサーバー: <b>${B[a.backend] ?? "未確認"}</b>　ログイン: <b>${L[a.login] ?? "未確認"}</b>${d.missingSources.length ? `<div class="small muted">資料が無い種類: ${d.missingSources.map(esc).join(" / ")}（期待値は画面の現状の挙動から書いた）</div>` : ""}</div>
+      ${IX.hasRound ? `<div class="small muted" style="margin-top:4px">前回のレビュー（${fmtTime(d.review.submittedAt)}）から: <a data-act="filter-changes">新規 ${d.cases.filter((c) => caseFlag(c) === "new").length} / 更新 ${d.cases.filter((c) => caseFlag(c) === "updated").length}</a> / 削除 ${removed.length}${removed.length ? `（${removed.map((id) => `<code>${esc(id)}</code>`).join(", ")}）` : ""}</div>` : ""}
+    </section>
+    <section class="box"><h2>機能 × ${S.matrix === "perspective" ? "観点" : "観点カタログのカテゴリ"} <span class="sub">ケース数。空いている所が手薄</span>
+      <span class="seg" style="margin-left:auto"><button class="${S.matrix === "perspective" ? "on" : ""}" data-act="matrix" data-v="perspective">観点</button><button class="${S.matrix === "catalog" ? "on" : ""}" data-act="matrix" data-v="catalog">カタログ</button></span></h2>
+      <div style="overflow:auto"><table class="grid heat"><thead><tr><th>グループ</th><th>機能</th><th>優先度</th>${cols.map((p) => `<th class="n">${esc(p)}</th>`).join("")}<th class="n">計</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr class="click" data-act="goto-feature" data-v="${esc(r.f.id)}"><td class="group">${esc(r.group)}</td><td>${esc(r.f.name)}</td><td><span class="badge prio-${r.f.priority}">${PRIORITY_LABEL[r.f.priority] ?? ""}</span></td>${r.vals.map((v) => heatCell(v, max)).join("")}<td class="n">${r.cs.length}</td></tr>`).join("")}
+      <tr><td class="group">合計</td><td></td><td></td>${cols.map((p) => `<td class="h"><b>${d.cases.filter((c) => hit(c, p)).length}</b></td>`).join("")}<td class="n"><b>${d.cases.length}</b></td></tr></tbody></table></div></section>
+    <section class="box"><h2>全体へのフィードバック <span class="sub">例: 全体として境界値が薄い</span></h2>${renderTargetFeedback("all", null)}</section>`;
+}
+function renderQuestions() {
+  const d = S.data;
+  const qs = d.cases.filter((c) => c.question);
+  const gone = d.review.feedback.filter((f) => f.type === "answer" && !IX.caseById.get(f.target.id)?.question);
+  return `<section class="box"><h2>仕様の確認事項 ${qs.length} 件 <span class="sub">回答を書くと、Claude が期待値に反映して確認事項を消す</span></h2>
+    ${qs.length ? `<table class="grid"><thead><tr><th style="width:150px">機能</th><th style="width:28%">ケース</th><th>確認したいこと</th><th style="width:34%">回答</th></tr></thead><tbody>
+      ${qs.map((c) => { const f = IX.featById.get(c.feature); const ans = fbFor("case", c.id).filter((x) => x.type === "answer");
+        return `<tr><td><a data-act="goto-feature" data-v="${esc(c.feature)}">${esc(f?.name ?? c.feature)}</a></td><td><a data-act="goto-case" data-v="${esc(c.id)}"><code>${esc(c.id)}</code></a><div class="small">${esc(c.title)}</div></td><td>${esc(c.question)}</td>
+          <td>${ans.map((x) => `<div class="small"><span class="badge ${FB_STATUS_CLASS[x.status]}">${FB_STATUS[x.status]}</span> ${esc(x.comment)}</div>`).join("")}
+            <div style="display:flex;gap:6px;margin-top:4px"><textarea data-answer="${esc(c.id)}" placeholder="${ans.length ? "追記する" : "回答を書く"}" style="min-height:32px;flex:1;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--panel)"></textarea><button class="btn small" data-act="send-answer" data-v="${esc(c.id)}">送る</button></div></td></tr>`; }).join("")}
+    </tbody></table>` : `<div class="empty">確認事項はありません</div>`}</section>
+    ${gone.length ? `<section class="box"><h2>反映済み ${gone.length} 件 <span class="sub">回答をもとにケースが直り、確認事項が消えたもの</span></h2>${renderThread(gone, true)}</section>` : ""}`;
+}
+function renderFeedbackTab() {
+  const fb = S.data.review.feedback.filter((f) => f.type !== "ok");
+  const groups = { awaiting: fb.filter((f) => f.status === "done" || f.status === "wontfix"), open: fb.filter((f) => f.status === "open"), closed: fb.filter((f) => f.status === "closed") };
+  const cur = S.fbFilter ?? (groups.awaiting.length ? "awaiting" : "open");
+  const L = { awaiting: "確認待ち", open: "対応待ち", closed: "閉じた" };
+  return `<section class="box"><h2>フィードバック <span class="seg">${Object.keys(L).map((k) => `<button class="${cur === k ? "on" : ""}" data-act="fb-filter" data-v="${k}">${L[k]} ${groups[k].length}</button>`).join("")}</span>
+    <span class="sub" style="margin-left:auto">OK の印 ${S.data.review.feedback.length - fb.length} 件は除く</span></h2>
+    ${cur === "awaiting" ? `<div class="small muted" style="margin-bottom:6px">Claude が返信したもの。返信と関連するケースを見て「確認した」か「まだ足りない」を付けてください。</div>` : ""}
+    ${renderThread(groups[cur], true) || `<div class="empty">ありません</div>`}</section>`;
+}
+
+// ---------- 描画後: パン・ズーム、フォーカス ----------
+function afterRender() {
+  if (S.reopen) document.getElementById("reopen-text")?.focus();
+  else if (S.composer?.focus) { const t = document.getElementById(S.composer.focus === "custom" ? "custom-p" : "comp-text"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } S.composer.focus = null; }
+  const svg = document.getElementById("viz");
+  if (!svg) return;
+  const st = S[svg.dataset.viz];
+  const g = document.getElementById("vizg");
+  const apply = () => g.setAttribute("transform", `translate(${st.t.x},${st.t.y}) scale(${st.t.k})`);
+  if (!st.fitted) { st.fitted = true; fit(svg, st); apply(); }
+  svg.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const r = svg.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    // ホイール = ズーム、Shift / 横スクロール = パン
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) { st.t.x -= e.deltaX || e.deltaY; }
+    else { const k = Math.min(2.5, Math.max(0.2, st.t.k * Math.exp(-e.deltaY * 0.0018))); st.t.x = px - ((px - st.t.x) * k) / st.t.k; st.t.y = py - ((py - st.t.y) * k) / st.t.k; st.t.k = k; }
+    apply();
+  }, { passive: false });
+  let drag = null;
+  svg.addEventListener("pointerdown", (e) => { if (e.target.closest("[data-act]")) return; drag = { x: e.clientX, y: e.clientY, tx: st.t.x, ty: st.t.y }; svg.classList.add("dragging"); svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener("pointermove", (e) => { if (!drag) return; st.t.x = drag.tx + e.clientX - drag.x; st.t.y = drag.ty + e.clientY - drag.y; apply(); });
+  svg.addEventListener("pointerup", () => { drag = null; svg.classList.remove("dragging"); });
+  if (svg.dataset.viz === "rel") {
+    svg.addEventListener("pointerover", (e) => { const n = e.target.closest("[data-act=rel-node]"); const h = n ? { kind: n.dataset.kind, id: n.dataset.v } : null; if (JSON.stringify(h) !== JSON.stringify(S.rel.hover)) { S.rel.hover = h; relHighlight(); } });
+  }
+}
+// ホバーの強調は SVG だけを描き直す（詳細パネルの入力を消さない）
+function relHighlight() {
+  const center = document.querySelector(".center");
+  if (!center || S.view !== "rel") return;
+  center.innerHTML = renderRel();
+  afterRender();
+}
+function fit(svg, st, min) {
+  const r = svg.getBoundingClientRect();
+  const size = st.size ?? { w: 800, h: 600 };
+  const want = Math.min((r.width - 40) / size.w, (r.height - 40) / size.h);
+  // 初回は文字が読める大きさを下限にし、はみ出す分はパンで見る。「全体」ボタンでは全体が収まるまで縮める
+  const k = Math.min(1.1, Math.max(min ?? 0.8, want));
+  st.t = { x: 20, y: size.h * k < r.height ? (r.height - size.h * k) / 2 : 20, k };
+}
+function zoom(factor) {
+  const svg = document.getElementById("viz"); if (!svg) return;
+  const st = S[svg.dataset.viz], r = svg.getBoundingClientRect(), px = r.width / 2, py = r.height / 2;
+  const k = Math.min(2.5, Math.max(0.2, st.t.k * factor));
+  st.t.x = px - ((px - st.t.x) * k) / st.t.k; st.t.y = py - ((py - st.t.y) * k) / st.t.k; st.t.k = k;
+  document.getElementById("vizg").setAttribute("transform", `translate(${st.t.x},${st.t.y}) scale(${st.t.k})`);
+}
+// 選んだノードが画面外なら寄せる
+function revealMapNode(key) {
+  const el = document.querySelector(`[data-key="${CSS.escape(key)}"]`), svg = document.getElementById("viz");
+  if (!el || !svg) return;
+  const r = svg.getBoundingClientRect(), b = el.getBoundingClientRect();
+  if (b.top < r.top + 20 || b.bottom > r.bottom - 20 || b.left < r.left || b.right > r.right) {
+    const st = S.map; st.t.y += (r.top + r.height / 2) - (b.top + b.height / 2); st.t.x += Math.min(0, r.right - 40 - b.right) + Math.max(0, r.left + 20 - b.left);
+    document.getElementById("vizg").setAttribute("transform", `translate(${st.t.x},${st.t.y}) scale(${st.t.k})`);
+  }
+}
+
+// ---------- 操作 ----------
+function select(sel) {
+  S.sel = sel; S.composer = null; S.reopen = null;
+  if (!(S.view in VIEWS)) S.view = "map";
+  S.panel = true;
+  // マップで見えるように、選んだものの祖先を開く
+  if (S.map.open && sel.kind === "case") { const c = IX.caseById.get(sel.id); if (c) { const f = IX.featById.get(c.feature); S.map.open.add("all"); S.map.open.add(`g:${f.group}`); S.map.open.add(`f:${f.id}`); for (const k of [...(c.screens ?? []), c.perspective]) { S.map.open.add(`f:${f.id}/s:${k}`); S.map.open.add(`f:${f.id}/p:${k}`); } } }
+  if (S.map.open && sel.kind === "feature") { const f = IX.featById.get(sel.id); if (f) { S.map.open.add("all"); S.map.open.add(`g:${f.group}`); } }
+  render();
+  if (S.view === "table" && sel.kind === "case") document.getElementById(`row-${CSS.escape(sel.id)}`)?.scrollIntoView({ block: "nearest" });
+  if (S.view === "map") { const n = document.querySelector("g.node.sel"); if (n) revealMapNode(n.dataset.key); }
+}
+function composerFromKey(key) {
+  const i = key.indexOf(":");
+  const kind = key.slice(0, i), id = key.slice(i + 1) || null;
+  return composerFor(key, kind, kind === "all" ? null : id);
+}
+function clearFilters() { S.filters = { q: "", priority: "", perspective: "", catalog: "", state: "", question: false }; }
+async function quick(caseId, type) {
+  if (type === "ok" || type === "drop") {
+    if (type === "drop" && S.composer?.key === compKey("case", caseId) && S.composer.comment.trim()) return sendFeedback({ ...S.composer, type: "drop" });
+    if (await post("/api/feedback", { type, target: { kind: "case", id: caseId }, comment: "", perspectives: [], customPerspectives: [] })) toast(type === "ok" ? "OK を付けました" : "不要を付けました");
+    render(); return;
+  }
+  S.sel = { kind: "case", id: caseId }; S.panel = true;
+  const c = composerFor(compKey("case", caseId), "case", caseId);
+  c.type = type; c.focus = "text";
+  render();
+}
+// 入力を始めたノードのコメント欄を、状態として持つ（描き直しで消えないように）
+function composerFor(key, kind, id) {
+  if (S.composer?.key !== key) S.composer = { key, kind, id, type: "comment", comment: "", perspectives: [], custom: [], showTags: false };
+  return S.composer;
+}
+function startCompose(kind, id, type) {
+  const c = composerFor(compKey(kind, id), kind, id);
+  c.type = type; c.focus = "text";
+  render();
+}
+async function sendFeedback(c) {
+  const ok = await post("/api/feedback", { type: c.type, target: { kind: c.kind, id: c.kind === "all" ? null : c.id }, comment: c.comment, perspectives: c.perspectives, customPerspectives: c.custom });
+  if (!ok) return;
+  S.composer = null; toast({ ok: "OK を付けました", drop: "不要を付けました", fix: "要修正を付けました" }[c.type] ?? "コメントを追加しました"); render();
+}
+async function submitComposer() {
+  const c = S.composer; if (!c) return;
+  const ce = document.getElementById("custom-p");
+  if (ce?.value.trim()) { c.custom.push(ce.value.trim()); ce.value = ""; }
+  c.error = !c.comment.trim() && !c.perspectives.length && !c.custom.length ? "コメントを書くか、観点を付けてください" : null;
+  if (c.error) return render();
+  await sendFeedback(c);
+}
+function moveCase(step) {
+  const list = orderedCases();
+  if (!list.length) return;
+  let i = S.sel.kind === "case" ? list.findIndex((c) => c.id === S.sel.id) : -1;
+  if (i < 0 && S.sel.kind === "feature") i = list.findIndex((c) => c.feature === S.sel.id) - (step > 0 ? 1 : 0);
+  const next = list[Math.max(0, Math.min(list.length - 1, i + step))];
+  if (S.view === "table" && S.table.grouped) { const f = IX.featById.get(next.feature); S.table.collapsed.delete(`g:${f.group}`); S.table.collapsed.delete(`f:${f.id}`); }
+  select({ kind: "case", id: next.id });
+}
+
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el || el.dataset.act === "pick") return;
+  const act = el.dataset.act, v = el.dataset.v;
+  switch (act) {
+    case "view": S.view = v; S.composer = null; S.reopen = null; break;
+    case "reload": await load(true); return;
+    case "help": S.help = !S.help; break;
+    case "submit": { const open = S.data.review.feedback.filter((f) => f.status === "open").length; if (await post("/api/submit", {})) toast(open ? `送りました。Claude に「レビューした」と伝えてください（対応待ち ${open} 件）` : "送りました"); break; }
+    case "toggle-panel": S.panel = !S.panel; break;
+    case "clear-filters": clearFilters(); break;
+    case "filter-changes": clearFilters(); S.filters.state = "changes"; S.view = "table"; break;
+    case "matrix": S.matrix = v; break;
+    case "map-by": S.map.by = v; S.map.open = null; S.map.fitted = false; break;
+    case "map-level": S.map.open = defaultOpen(buildTree(), Number(v)); S.map.fitted = false; break;
+    case "toggle-node": { e.stopPropagation(); const k = el.dataset.key; if (S.map.open.has(k)) S.map.open.delete(k); else S.map.open.add(k); break; }
+    case "node": { if (e.target.closest("[data-act=toggle-node]")) { const k = e.target.closest("[data-act=toggle-node]").dataset.key; if (S.map.open.has(k)) S.map.open.delete(k); else S.map.open.add(k); break; } const n = findNode(el.dataset.key); if (n) { if (n.children.length && !S.map.open.has(n.key)) S.map.open.add(n.key); return select(nodeTarget(n)); } return; }
+    case "rel-node": return select({ kind: el.dataset.kind, id: v });
+    case "zoom": return zoom(Number(v));
+    case "fit": { const svg = document.getElementById("viz"); fit(svg, S[svg.dataset.viz], 0.2); document.getElementById("vizg").setAttribute("transform", `translate(${S[svg.dataset.viz].t.x},${S[svg.dataset.viz].t.y}) scale(${S[svg.dataset.viz].t.k})`); return; }
+    case "sort": S.table.dir = S.table.sort === v ? -S.table.dir : 1; S.table.sort = v; break;
+    case "table-collapse": { if (e.target.closest("a")) return; if (S.table.collapsed.has(v)) S.table.collapsed.delete(v); else S.table.collapsed.add(v); break; }
+    case "csv": return exportCsv();
+    case "quick": e.stopPropagation(); return quick(v, el.dataset.type);
+    case "select-all": return select({ kind: "all", id: null });
+    case "select-case": return select({ kind: "case", id: v });
+    case "select-feature": e.stopPropagation(); return select({ kind: "feature", id: v });
+    case "select-group": e.stopPropagation(); return select({ kind: "group", id: v });
+    case "select-screen": return select({ kind: "screen", id: v });
+    case "goto-feature": S.view = "map"; return select({ kind: "feature", id: v });
+    case "goto-case": S.view = "table"; return select({ kind: "case", id: v });
+    case "toggle-tags": { const c = composerFromKey(el.dataset.key); c.showTags = !c.showTags; break; }
+    case "cancel-compose": S.composer = null; break;
+    case "send-feedback": composerFromKey(el.dataset.key); return submitComposer();
+    case "unpick-custom": S.composer.custom.splice(Number(v), 1); break;
+    case "fb-filter": S.fbFilter = v; break;
+    case "fb-close": if (await post("/api/feedback/action", { id: v, action: "close" })) toast("閉じました"); break;
+    case "fb-delete": if (await post("/api/feedback/action", { id: v, action: "delete" })) toast("取り消しました"); break;
+    case "fb-reopen": S.reopen = v; break;
+    case "fb-reopen-cancel": S.reopen = null; break;
+    case "fb-reopen-send": { const text = document.getElementById("reopen-text")?.value ?? ""; if (!text.trim()) return toast("何が足りないかを書いてください"); if (await post("/api/feedback/action", { id: v, action: "reopen", text })) { S.reopen = null; toast("対応待ちに戻しました"); } break; }
+    case "send-answer": { const ta = document.querySelector(`textarea[data-answer="${CSS.escape(v)}"]`); if (!ta?.value.trim()) return toast("回答を書いてください"); if (await post("/api/feedback", { type: "answer", target: { kind: "case", id: v }, comment: ta.value })) toast("回答を送りました"); break; }
+    default: return;
+  }
+  render();
+});
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.dataset.act === "pick") { const c = composerFromKey(t.dataset.key); const set = new Set(c.perspectives); if (t.checked) set.add(t.value); else set.delete(t.value); c.perspectives = [...set]; return render(); }
+  if (t.dataset.col) { if (t.checked) S.table.cols.add(t.dataset.col); else S.table.cols.delete(t.dataset.col); render(); document.querySelector("details.cols")?.setAttribute("open", ""); return; }
+  if (t.dataset.actChange === "map-color") { S.map.color = t.value; return render(); }
+  if (t.dataset.actChange === "table-grouped") { S.table.grouped = t.checked; return render(); }
+  if (t.dataset.filter) { S.filters[t.dataset.filter] = t.type === "checkbox" ? t.checked : t.value; S.map.fitted = S.view !== "map"; render(); }
+});
+let qTimer;
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.id === "q") { clearTimeout(qTimer); qTimer = setTimeout(() => { S.filters.q = t.value; render(); const q = document.getElementById("q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }, 220); }
+  if (t.dataset.compose) {
+    const c = composerFromKey(t.dataset.compose);
+    const first = c.comment === "" && !t.id;
+    c.comment = t.value;
+    // 何も選ばずに書き始めた欄も、以後は描き直しで消えないように入力中として扱う
+    if (first) t.id = "comp-text";
+  }
+});
+document.addEventListener("keydown", (e) => {
+  const t = e.target, typing = t.matches?.("input, textarea, select");
+  if (t.id === "custom-p" && e.key === "Enter" && !(e.metaKey || e.ctrlKey)) { e.preventDefault(); const c = composerFromKey(t.dataset.key); if (t.value.trim()) { c.custom.push(t.value.trim()); c.focus = "custom"; render(); } return; }
+  if ((t.dataset.compose || t.id === "custom-p") && e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); composerFromKey(t.dataset.compose ?? t.dataset.key); submitComposer(); return; }
+  if (e.key === "Escape") { if (S.composer || S.reopen) { S.composer = null; S.reopen = null; render(); } else if (typing) t.blur(); else if (S.help) { S.help = false; render(); } return; }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "?") { S.help = !S.help; return render(); }
+  if (e.key === "/") { e.preventDefault(); if (!(S.view in VIEWS)) { S.view = "table"; render(); } document.getElementById("q")?.focus(); return; }
+  if (!(S.view in VIEWS)) return;
+  if (e.key === "f" && S.view !== "table") { const svg = document.getElementById("viz"); fit(svg, S[svg.dataset.viz], 0.2); render(); return; }
+  if (e.key === "j" || e.key === "k") { e.preventDefault(); return moveCase(e.key === "j" ? 1 : -1); }
+  if (S.sel.kind !== "case") return;
+  const map = { o: "ok", 1: "ok", 2: "fix", 5: "drop", c: "comment" };
+  if (map[e.key]) { e.preventDefault(); if (map[e.key] === "ok" || map[e.key] === "drop") quick(S.sel.id, map[e.key]); else startCompose("case", S.sel.id, map[e.key]); }
+});
+window.addEventListener("resize", () => { if (S.view === "map" || S.view === "rel") render(); });
+
+load().then(() => setInterval(poll, 3000)).catch((err) => { document.getElementById("app").innerHTML = `<div class="page">読み込めませんでした: ${esc(err.message)}</div>`; });
+</script>
+</body>
+</html>

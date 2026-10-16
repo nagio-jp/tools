@@ -8,6 +8,8 @@ import { readdirSync, existsSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { LAYOUT } from "./lib/core.mjs";
 import { readJson, loadScreens, loadFeatures, groupFeatures, PERSPECTIVES } from "./lib/plan.mjs";
+import { loadCatalog } from "./lib/catalog.mjs";
+import { loadReview, reviewStats, caseHash, CASE_STATE_LABEL, FEEDBACK_STATUS } from "./lib/review.mjs";
 
 const root = resolve(process.argv[2] ?? "testcases");
 const casesDir = join(root, "cases");
@@ -20,6 +22,13 @@ if (source !== "inventory") {
 }
 
 const errors = [];
+let catalog;
+try {
+  catalog = loadCatalog();
+} catch (e) {
+  console.error(e.message);
+  process.exit(2);
+}
 
 // ---- 問診 ----
 const ANSWERS = { backend: ["yes", "no", "unknown"], login: ["no", "yes", "unknown"] };
@@ -91,6 +100,11 @@ for (const file of caseFiles) {
     caseIds.add(c.id);
     for (const k of ["title", "expected"]) if (!c[k]) errors.push(`${label} に ${k} がありません`);
     if (!PERSPECTIVES.includes(c.perspective)) errors.push(`${label} の perspective は ${PERSPECTIVES.join(" / ")} のどれか: ${c.perspective ?? "未記入"}`);
+    if (c.catalogPerspectives !== undefined) {
+      if (!Array.isArray(c.catalogPerspectives)) errors.push(`${label} の catalogPerspectives は観点カタログの key の配列にする`);
+      else for (const k of c.catalogPerspectives) if (!catalog.byKey.has(k)) errors.push(`${label} の catalogPerspectives に、観点カタログに無い key があります: ${k}`);
+    }
+    if (c.perspectiveNote !== undefined && typeof c.perspectiveNote !== "string") errors.push(`${label} の perspectiveNote は文字列にする`);
     if (backendNo && c.perspective === "異常系") errors.push(`${label}: 問診で「サーバーはない」なので、異常系（保存・送信の失敗など）は書かない`);
     if (!Array.isArray(c.steps) || c.steps.length === 0) errors.push(`${label} に steps がありません`);
     if (c.basis) withBasis++;
@@ -153,6 +167,26 @@ if (high.length > 0) {
   }
 }
 
+const catCount = countCategories([...casesByFeature.values()].flat());
+console.log(`\n観点カタログのカテゴリ別ケース数: ${catalog.categories.map((k) => `${k} ${catCount[k]}`).join(" / ")}`);
+const noCatalog = [...casesByFeature.values()].flat().filter((c) => !(c.catalogPerspectives?.length > 0)).length;
+if (noCatalog > 0) console.log(`  catalogPerspectives の無いケース: ${noCatalog} 件（当てはまる観点が無いなら付けなくてよい）`);
+
+let review = null;
+if (existsSync(join(root, "review.json"))) {
+  try {
+    review = loadReview(root);
+  } catch (e) {
+    console.log(`\nreview.json を読めません: ${e.message}`);
+  }
+}
+const reviewCases = [...casesByFeature.values()].flat().map((c) => ({ id: c.id, hash: caseHash(c) }));
+if (review) {
+  const st = reviewStats(review, reviewCases);
+  console.log(`\nレビュー: ${Object.entries(st.counts).map(([k, v]) => `${CASE_STATE_LABEL[k]} ${v}`).join(" / ")}`);
+  console.log(`  フィードバック: ${Object.entries(st.feedback).map(([k, v]) => `${FEEDBACK_STATUS[k]} ${v}`).join(" / ")}`);
+}
+
 if (errors.length > 0) {
   console.log(`\n形式エラー・抜け (${errors.length}):`);
   for (const e of errors) console.log(`  - ${e}`);
@@ -177,6 +211,15 @@ process.exit(0);
 
 function cell(s) {
   return String(s ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
+}
+
+function countCategories(list) {
+  const m = Object.fromEntries(catalog.categories.map((k) => [k, 0]));
+  for (const c of list) {
+    const cats = new Set((c.catalogPerspectives ?? []).map((k) => catalog.byKey.get(k)?.category).filter(Boolean));
+    for (const k of cats) m[k]++;
+  }
+  return m;
 }
 
 function countBy(list) {
@@ -215,6 +258,27 @@ function summaryMarkdown() {
   const total = countBy(all);
   L.push(`| 合計 | | | | | ${used.map((p) => total[p]).join(" | ")} | ${caseCount} |`, "");
 
+  L.push("## 機能と観点カタログのカテゴリ", "", "カテゴリに当たるケースの数（1 ケースが複数のカテゴリに数えられることがある）。空欄の多い列が、薄い観点。", "");
+  L.push(`| 機能グループ | 機能 | ${catalog.categories.join(" | ")} |`);
+  L.push(`|---|---|${catalog.categories.map(() => "---:").join("|")}|`);
+  for (const [group, list] of groupFeatures(plan.features)) {
+    list.forEach((f, i) => {
+      const by = countCategories(casesByFeature.get(f.id) ?? []);
+      L.push(`| ${i === 0 ? cell(group) : ""} | ${cell(f.name)} | ${catalog.categories.map((k) => by[k] || "").join(" | ")} |`);
+    });
+  }
+  const catTotal = countCategories(all);
+  L.push(`| 合計 | | ${catalog.categories.map((k) => catTotal[k]).join(" | ")} |`, "");
+
+  if (review) {
+    const st = reviewStats(review, reviewCases);
+    L.push("## レビュー", "");
+    L.push(`- ケース: ${Object.entries(st.counts).map(([k, v]) => `${CASE_STATE_LABEL[k]} ${v}`).join(" / ")}`);
+    L.push(`- フィードバック: ${Object.entries(st.feedback).map(([k, v]) => `${FEEDBACK_STATUS[k]} ${v}`).join(" / ")}`);
+    if (review.submittedAt) L.push(`- 前回のレビューから: 新規 ${st.added} / 更新 ${st.updated} / 削除 ${st.removed}`);
+    L.push("");
+  }
+
   L.push(`## 仕様の確認事項 (${questions.length})`, "");
   if (questions.length === 0) L.push("なし", "");
   else {
@@ -246,7 +310,10 @@ function summaryMarkdown() {
   for (const f of plan.features) {
     const cs = casesByFeature.get(f.id) ?? [];
     L.push(`### ${cell(f.group)} / ${cell(f.name)}（${cs.length} 件）`, "");
-    for (const c of cs) L.push(`- [${c.perspective}] ${cell(c.title)}${c.question ? "（確認事項あり）" : ""}`);
+    for (const c of cs) {
+      const extra = [...(c.catalogPerspectives ?? []).map((k) => catalog.byKey.get(k)?.name ?? k), ...(c.perspectiveNote ? [c.perspectiveNote] : [])];
+      L.push(`- [${c.perspective}] ${cell(c.title)}${extra.length ? `（${cell(extra.join("・"))}）` : ""}${c.question ? "（確認事項あり）" : ""}`);
+    }
     L.push("");
   }
   return L.join("\n");

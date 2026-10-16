@@ -38,6 +38,9 @@ Claude Code で `/discover-cases <対象のルートディレクトリ> [起動�
 | `crawl.mjs` | 起動中のアプリをブラウザで巡回し、描画後の画面から操作できる要素を抽出する | Playwright |
 | `features.mjs` | 機能一覧（features.json）を「グループ → 機能」の木で出し、どの機能にも属さない画面を示す | なし |
 | `coverage.mjs` | 全機能にケースがあるか・全画面と全要素がどれかの機能・ケースに属するかを判定し、summary.md を書き出す | なし |
+| `review.mjs` | レビュー画面（マップ・関係図・表）を 127.0.0.1 で開く。人のフィードバックは review.json に保存し、`--pending` で対応待ちを出し、`--reply` / `--replies` で返信を書く | なし |
+
+観点カタログは skill 直下の `perspectives.yaml`（カテゴリ・観点名・説明・当てはまる仕様の目安のフラットな配列）。ケースの `catalogPerspectives` と、レビュー画面の観点のタグに使う。
 
 `crawl.mjs` を使うときだけ、Playwright を入れる（対象プロジェクトに Playwright があれば `--project <対象>` でそれを使える）。
 
