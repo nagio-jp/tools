@@ -1,0 +1,9 @@
+{
+  "name": "discover-cases-scripts",
+  "private": true,
+  "type": "module",
+  "description": "crawl.mjs が使う Playwright。inventory.mjs・routes.mjs・coverage.mjs は依存なしで動く",
+  "dependencies": {
+    "playwright": "^1.56.0"
+  }
+}

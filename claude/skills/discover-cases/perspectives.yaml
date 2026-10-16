@@ -1,0 +1,115 @@
+- key: boundary-value
+  category: 入力・データ
+  name: 境界値分析
+  description: 数値・件数・文字数の境界（0/1/最大/最大+1）での振る舞いを検証する
+  application_hint: 上限・下限・閾値・件数制限のある入力や表示がある仕様
+- key: equivalence-partitioning
+  category: 入力・データ
+  name: 同値分割
+  description: 入力を有効/無効の同値クラスに分割し代表値で検証する
+  application_hint: 入力フォーム・パラメータを持つすべての仕様
+- key: required-type-format-validation
+  category: 入力・データ
+  name: 必須・型・フォーマット検証
+  description: 必須欠落・型不一致・フォーマット違反時のエラー表示と保存拒否を検証する
+  application_hint: フォーム・API 入力を持つ仕様
+- key: character-set-and-length
+  category: 入力・データ
+  name: 文字種・長さ
+  description: 全角/半角・絵文字・サロゲートペア・前後空白・改行を含む入力の扱いを検証する
+  application_hint: 自由テキスト入力・氏名・検索語を扱う仕様
+- key: cardinality-0-1-n
+  category: 入力・データ
+  name: 多重度（0/1/N）
+  description: 対象が 0 件・1 件・複数件のときの表示と操作を検証する
+  application_hint: 一覧・子要素・添付など件数が変わる要素を持つ仕様
+- key: state-transition
+  category: 状態・遷移
+  name: 状態遷移
+  description: 定義された全遷移と、許可されない遷移の拒否を検証する（0-switch/1-switch）
+  application_hint: ステータス・フェーズ・ワークフローを持つ仕様
+- key: repetition-and-rounds
+  category: 状態・遷移
+  name: 反復・ラウンド数
+  description: 同一操作の繰り返し（2 回目以降・差戻し後の再実行）での振る舞いを検証する
+  application_hint: 提出→差戻し→再提出のようなループを持つ仕様
+- key: idempotency-and-double-submit
+  category: 状態・遷移
+  name: 冪等性・二重送信
+  description: 二重クリック・リトライ・再送信で重複データや二重処理が起きないことを検証する
+  application_hint: 送信・決済・作成操作を持つ仕様
+- key: permission-role-matrix
+  category: 権限・アクセス
+  name: 権限×ロールのマトリクス
+  description: 全ロール × 全アクションの許可/拒否を組み合わせで検証する
+  application_hint: ロール・権限による出し分けがある仕様
+- key: authentication-state
+  category: 権限・アクセス
+  name: 認証状態
+  description: 未ログイン・セッション期限切れ・ログアウト直後のアクセス制御を検証する
+  application_hint: 認証が必要な画面・API を持つ仕様
+- key: spa-navigation-vs-direct-url
+  category: 権限・アクセス
+  name: SPA 遷移 vs URL 直接アクセス
+  description: クライアント遷移とリロード・ブックマーク・URL 直接入力を別の観測点として検証する
+  application_hint: ガード付きページ遷移を持つ SPA の仕様
+- key: decision-table
+  category: 組み合わせ
+  name: デシジョンテーブル
+  description: 条件の組み合わせ → 結果のルール表を作り全ルールを検証する
+  application_hint: 条件分岐で結果が変わるロジック（料金・通知先・表示分岐）
+- key: multi-factor-combination
+  category: 組み合わせ
+  name: 多因子の組み合わせ
+  description: 因子×水準を洗い出しペアワイズ等で圧縮して検証する
+  application_hint: 3 因子以上が絡む機能（ロール×状態×操作など）
+- key: error-handling
+  category: 異常系・外部
+  name: エラー処理・異常系
+  description: サーバエラー・タイムアウト時のエラー表示・リカバリ・データ非破壊を検証する
+  application_hint: 外部通信・保存処理を持つすべての仕様
+- key: external-system-integration-failure
+  category: 異常系・外部
+  name: 外部システム連携の失敗
+  description: 外部 API の失敗・遅延・不正応答時の振る舞い（リトライ・部分成功）を検証する
+  application_hint: 外部サービス連携・webhook を持つ仕様
+- key: concurrent-operation-and-locking
+  category: 異常系・外部
+  name: 並行操作・排他
+  description: 同一データへの同時編集・競合時の整合性とロック挙動を検証する
+  application_hint: 複数ユーザーが同じデータを触る仕様
+- key: data-consistency
+  category: 整合性
+  name: データ整合性
+  description: 集計値・進捗率・カウントが元データと一致することを検証する
+  application_hint: 集計・進捗・ダッシュボードを持つ仕様
+- key: deletion-archive-propagation
+  category: 整合性
+  name: 削除・アーカイブの波及
+  description: 削除・無効化が参照元・子データ・表示に正しく波及することを検証する
+  application_hint: 削除・アーカイブ・無効化操作を持つ仕様
+- key: responsive-layout
+  category: 表示
+  name: 表示崩れ・レスポンシブ
+  description: 主要ビューポートでのレイアウト崩れを検証する（VRT 対象）
+  application_hint: 画面を持つすべての仕様
+- key: empty-state-and-loading
+  category: 表示
+  name: 空状態・ローディング
+  description: 0 件表示・初回ローディング・エラー時のプレースホルダを検証する
+  application_hint: 一覧・非同期取得を持つ画面の仕様
+- key: datetime-and-timezone
+  category: 表示
+  name: 日時・タイムゾーン
+  description: 日付境界・タイムゾーン・相対時刻表示の正しさを検証する
+  application_hint: 日時を扱う仕様
+- key: performance-and-large-data
+  category: 非機能
+  name: 性能・大量データ
+  description: 大量データ時のページング・応答時間・N+1 を検証する
+  application_hint: 一覧・検索・集計を持つ仕様
+- key: security-input-sanitization
+  category: 非機能
+  name: セキュリティ入力
+  description: XSS・SQL/コマンドインジェクション文字列の無害化を検証する
+  application_hint: 自由入力を保存・表示する仕様
